@@ -399,18 +399,158 @@ const PROBLEMS_NYUSHI = [
     answers:["全反射","ぜんはんしゃ"],
     unit:"",
     explanation:"「全反射」は光ファイバーの原理として利用されています。インターネット回線などに応用されています。" },
+
+  // 追加○×（入試）
+  { qtype:"ox", diff:"nyushi", title:"凸レンズ①", color:"#dc2626",
+    question:"凸レンズは中央が薄く、端が厚い形をしている。",
+    correct:false,
+    explanation:"凸レンズは中央が厚く、端が薄い形です。光を集める性質があります。" },
+  { qtype:"ox", diff:"nyushi", title:"凸レンズ②", color:"#dc2626",
+    question:"焦点距離より内側に物体を置くと、スクリーンに実像ができる。",
+    correct:false,
+    explanation:"焦点距離より内側では実像はできず、レンズ越しに拡大された虚像が見えます。" },
+  { qtype:"ox", diff:"nyushi", title:"光の速さ", color:"#dc2626",
+    question:"光の速さは音の速さより速い。",
+    correct:true,
+    explanation:"光の速さは約30万km/s、音の速さは約340m/s。光は音の約90万倍速いです。" },
+  { qtype:"ox", diff:"nyushi", title:"屈折と速さ", color:"#dc2626",
+    question:"光が空気からガラスに入ると、光の速さは遅くなる。",
+    correct:true,
+    explanation:"光は密度の高い物質（ガラス・水）に入ると速さが遅くなります。この速さの違いが屈折の原因です。" },
+  { qtype:"ox", diff:"nyushi", title:"虚像と実像", color:"#dc2626",
+    question:"虚像はスクリーンに映すことができる。",
+    correct:false,
+    explanation:"虚像はスクリーンに映せません。実像はスクリーンに映すことができます。" },
+  { qtype:"ox", diff:"nyushi", title:"凸レンズ③", color:"#dc2626",
+    question:"物体を焦点距離の2倍の位置に置くと、同じ大きさの実像ができる。",
+    correct:true,
+    explanation:"物体を焦点距離の2倍（2F）に置くと、レンズの反対側の2Fに同じ大きさの倒立実像ができます。" },
+
+  // 追加選択（入試）
+  { qtype:"select", diff:"nyushi", title:"実像の性質", color:"#dc2626",
+    question:"凸レンズで物体が焦点の外側にあるとき、できる実像の向きはどうなっていますか？",
+    options:["①物体と同じ向き（正立）","②上下左右が逆（倒立）","③左右だけ逆"],
+    answer:1,
+    explanation:"焦点の外側に物体があるとき、スクリーンには「倒立実像」（上下左右が逆）ができます。" },
+  { qtype:"select", diff:"nyushi", title:"物体を近づけると", color:"#dc2626",
+    question:"凸レンズに物体を近づけていくと、実像の大きさはどうなりますか？",
+    options:["①小さくなる","②大きくなる","③変わらない"],
+    answer:1,
+    explanation:"物体をレンズに近づけるほど（焦点に近づくほど）、実像は大きくなり、スクリーンはレンズから遠ざけないと映らなくなります。" },
+  { qtype:"select", diff:"nyushi", title:"光の屈折方向", color:"#dc2626",
+    question:"光が空気から水に入るとき（斜めに入射）、光の進む方向はどうなりますか？",
+    options:["①境界面から遠ざかる方向に曲がる","②境界面に近づく方向に曲がる","③曲がらず直進する"],
+    answer:1,
+    explanation:"光が疎な媒質（空気）から密な媒質（水）に入るとき、境界面の法線に近づく方向（入射角＞屈折角）に曲がります。" },
+  { qtype:"select", diff:"nyushi", title:"臨界角", color:"#dc2626",
+    question:"全反射が起きる条件として正しいのはどれですか？",
+    options:["①光が疎な媒質から密な媒質へ進むとき","②光が密な媒質から疎な媒質へ進み、入射角が臨界角以上のとき","③光が同じ媒質を進むとき"],
+    answer:1,
+    explanation:"全反射は、密な媒質から疎な媒質へ光が進み、入射角が臨界角以上になったときに起きます。" },
 ];
 
+// ─── 動的計算問題ジェネレーター ────────────────────────────
+function genCalcProblems() {
+  const problems = [];
+
+  // ① 反射角（入射角＝反射角）×5パターン
+  for (let i = 0; i < 5; i++) {
+    const angle = randInt(10, 80);
+    problems.push({
+      qtype:"calc", diff:"nyushi", title:"反射角の計算", color:"#dc2626",
+      question:`鏡に光を当てたとき、入射角が ${angle}° でした。\n反射角は何度ですか？`,
+      answer: angle, unit:"度",
+      explanation:`反射の法則「入射角＝反射角」より、反射角も ${angle}° です。`
+    });
+  }
+
+  // ② 鏡の角度から反射後の光の向き（入射角→鏡面との角度）
+  for (let i = 0; i < 3; i++) {
+    const mirrorAngle = randInt(20, 70); // 鏡面との角度
+    const incidence = 90 - mirrorAngle;  // 法線との角度（入射角）
+    problems.push({
+      qtype:"calc", diff:"nyushi", title:"鏡面角度と入射角", color:"#dc2626",
+      question:`光が鏡の面に対して ${mirrorAngle}° の角度で当たりました。\n入射角（法線との角度）は何度ですか？`,
+      answer: incidence, unit:"度",
+      explanation:`鏡の面との角度が ${mirrorAngle}° のとき、法線（鏡に垂直な線）との角度は\n90 − ${mirrorAngle} = ${incidence}° です。これが入射角です。`
+    });
+  }
+
+  // ③ 凸レンズの公式（1/f = 1/a + 1/b）×6パターン
+  // 割り切れる組み合わせを生成
+  const lensCombos = [
+    {a:30, b:20}, {a:40, b:40}, {a:60, b:30}, {a:20, b:30},
+    {a:60, b:20}, {a:40, b:24}, {a:30, b:30}, {a:24, b:40},
+  ];
+  lensCombos.forEach(({a, b}) => {
+    // 1/f = 1/a + 1/b → f = ab/(a+b)
+    const f_num = a * b, f_den = a + b;
+    const f = f_num / f_den;
+    if (!Number.isInteger(f)) return;
+    const whichUnknown = Math.random() < 0.33 ? "f" : Math.random() < 0.5 ? "b" : "a";
+    if (whichUnknown === "f") {
+      problems.push({
+        qtype:"calc", diff:"nyushi", title:"焦点距離の計算", color:"#dc2626",
+        question:`物体をレンズの中心から ${a}cm 離して置いたら、\nレンズの反対側 ${b}cm のところに実像ができました。\n焦点距離は何cmですか？\n（1/f = 1/a + 1/b を使う）`,
+        answer: f, unit:"cm",
+        explanation:`1/f = 1/${a} + 1/${b} = ${b}/${f_num} + ${a}/${f_num} = ${a+b}/${f_num}\nf = ${f_num}/${a+b} = ${f}cm`
+      });
+    } else if (whichUnknown === "b") {
+      // 1/b = 1/f - 1/a → b = af/(a-f)
+      const b2_num = a * f, b2_den = a - f;
+      if (b2_den <= 0 || !Number.isInteger(b2_num / b2_den)) return;
+      const b2 = b2_num / b2_den;
+      problems.push({
+        qtype:"calc", diff:"nyushi", title:"像の位置の計算", color:"#dc2626",
+        question:`焦点距離 ${f}cm の凸レンズの中心から\n物体を ${a}cm 離して置きました。\n実像はレンズの反対側何cmにできますか？\n（1/f = 1/a + 1/b を使う）`,
+        answer: b2, unit:"cm",
+        explanation:`1/${b2} = 1/${f} - 1/${a} = ${a}/${f*a} - ${f}/${f*a} = ${a-f}/${f*a}\nb = ${f*a}/${a-f} = ${b2}cm`
+      });
+    }
+  });
+
+  // ④ 光の速さ計算（距離＝速さ×時間、30万km/s）
+  const lightTimes = [1, 2, 3, 5, 8, 10];
+  lightTimes.forEach(t => {
+    problems.push({
+      qtype:"calc", diff:"nyushi", title:"光の速さ計算", color:"#dc2626",
+      question:`光の速さを秒速30万kmとします。\n光が ${t} 秒間に進む距離は何万kmですか？`,
+      answer: 30 * t, unit:"万km",
+      explanation:`距離 = 速さ × 時間 = 30万km × ${t} = ${30*t}万km`
+    });
+  });
+
+  // ⑤ 入射角から屈折角（近似、空気→水：n=1.33, 小学向け簡易版）
+  // 小学レベル：「入射角が大きいほど屈折角も大きい」の定性問題として出す
+  const angles1 = [30, 40, 45, 50, 60];
+  angles1.forEach(inc => {
+    // 簡易近似：sinθ2 = sinθ1 / 1.33
+    const ref = Math.round(Math.asin(Math.sin(inc * Math.PI/180) / 1.33) * 180/Math.PI);
+    if (ref > 0 && ref < inc) {
+      problems.push({
+        qtype:"calc", diff:"nyushi", title:"屈折角の計算", color:"#dc2626",
+        question:`光が空気から水に入るとき、入射角が ${inc}° でした。\n屈折角は約何度ですか？\n（空気の屈折率1.0、水の屈折率1.33として計算）`,
+        answer: ref, unit:"度",
+        explanation:`スネルの法則：sin${inc}° / sin屈折角 = 1.33\nsin屈折角 = sin${inc}° ÷ 1.33 ≈ ${ref}°\n（光が密な媒質に入るため、入射角 ${inc}° > 屈折角 ${ref}°）`
+      });
+    }
+  });
+
+  return problems;
+}
+
 function getProblems(diff) {
+  const calcProbs = genCalcProblems();
   if (diff === "shogaku") return [...PROBLEMS_SHOGAKU];
-  if (diff === "nyushi")  return [...PROBLEMS_NYUSHI];
-  return [...PROBLEMS_SHOGAKU, ...PROBLEMS_NYUSHI];
+  if (diff === "nyushi")  return [...PROBLEMS_NYUSHI, ...calcProbs];
+  return [...PROBLEMS_SHOGAKU, ...PROBLEMS_NYUSHI, ...calcProbs];
 }
 
 function pickProblems(diff, total) {
   const pool = getProblems(diff);
   const result = [];
   const used = new Set();
+  // プールが足りない場合は重複を許す
   while (result.length < total) {
     const idx = randInt(0, pool.length - 1);
     if (!used.has(idx) || pool.length < total) {
