@@ -1,0 +1,152 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+<title>理科クイズ</title>
+<style>
+  * { box-sizing:border-box; margin:0; padding:0; -webkit-tap-highlight-color:transparent; }
+  body {
+    min-height:100vh;
+    background: linear-gradient(160deg,#fef9c3 0%,#dcfce7 40%,#dbeafe 70%,#ede9fe 100%);
+    font-family:'Hiragino Maru Gothic ProN','Noto Sans JP',sans-serif;
+    display:flex; flex-direction:column; align-items:center;
+    justify-content:flex-start; padding:32px 16px 48px;
+  }
+  @keyframes floatUp { from{opacity:0;transform:translateY(24px)} to{opacity:1;transform:translateY(0)} }
+  .header { text-align:center; margin-bottom:24px; animation:floatUp 0.5s ease both; }
+  .header .emoji { font-size:56px; display:block; margin-bottom:8px; }
+  .header h1 { font-size:26px; font-weight:900; color:#1e293b; margin-bottom:4px; }
+  .header p  { font-size:14px; color:#64748b; }
+
+  .section-label {
+    font-size:11px; font-weight:bold; color:#94a3b8;
+    text-transform:uppercase; letter-spacing:0.1em;
+    margin:16px 0 8px; width:100%; max-width:420px;
+  }
+  .grid { display:flex; flex-direction:column; gap:12px; width:100%; max-width:420px; }
+
+  .card {
+    background:#fff; border-radius:18px; padding:18px 16px;
+    box-shadow:0 3px 16px rgba(0,0,0,0.08);
+    text-decoration:none; display:flex; align-items:center; gap:14px;
+    animation:floatUp 0.5s ease both; border-left:5px solid transparent;
+  }
+  .card:active { transform:scale(0.97); }
+  .card-icon {
+    font-size:36px; flex-shrink:0; width:54px; height:54px;
+    border-radius:14px; display:flex; align-items:center; justify-content:center;
+  }
+  .card-body { flex:1; }
+  .card-title { font-size:16px; font-weight:900; margin-bottom:3px; }
+  .card-desc  { font-size:11px; color:#64748b; line-height:1.5; }
+  .card-badge {
+    font-size:10px; font-weight:bold; padding:2px 7px;
+    border-radius:99px; display:inline-block; margin-top:4px;
+  }
+  .card-arrow { font-size:18px; color:#cbd5e1; flex-shrink:0; }
+
+  /* 光 */
+  .c-hikari { border-left-color:#f97316; }
+  .c-hikari .card-icon  { background:#fff7ed; }
+  .c-hikari .card-title { color:#9a3412; }
+  /* 音 */
+  .c-oto    { border-left-color:#3b82f6; }
+  .c-oto    .card-icon  { background:#eff6ff; }
+  .c-oto    .card-title { color:#1e3a8a; }
+  /* 準備中 */
+  .card-coming { border-left-color:#e2e8f0; opacity:0.5; pointer-events:none; }
+  .card-coming .card-icon  { background:#f8fafc; }
+  .card-coming .card-title { color:#94a3b8; }
+
+  .badge-shogaku { background:#dcfce7; color:#166534; }
+  .badge-nyushi  { background:#fef3c7; color:#92400e; }
+
+  .footer { margin-top:28px; font-size:12px; color:#94a3b8; text-align:center; animation:floatUp 0.6s ease 0.4s both; }
+
+  /* 算数リンク */
+  .other-link {
+    display:flex; align-items:center; justify-content:center;
+    gap:8px; margin-top:20px; padding:12px 20px;
+    background:#fff; border-radius:14px; text-decoration:none;
+    font-size:13px; font-weight:bold; color:#64748b;
+    box-shadow:0 2px 8px rgba(0,0,0,0.06); animation:floatUp 0.5s ease 0.3s both;
+  }
+  .other-link:active { transform:scale(0.97); }
+</style>
+</head>
+<body>
+
+<div class="header">
+  <span class="emoji">🔬</span>
+  <h1>理科クイズ</h1>
+  <p>小学生〜中学入試レベルの理科を練習しよう！</p>
+</div>
+
+<div class="section-label">💡 光・音のせいしつ</div>
+<div class="grid">
+
+  <a href="hikari-quiz.html" class="card c-hikari" style="animation-delay:0.1s">
+    <div class="card-icon">💡</div>
+    <div class="card-body">
+      <div class="card-title">光の性質</div>
+      <div class="card-desc">直進・反射・屈折・凸レンズ・全反射</div>
+      <div>
+        <span class="card-badge badge-shogaku">小学生</span>
+        <span class="card-badge badge-nyushi" style="margin-left:4px">中学入試</span>
+      </div>
+    </div>
+    <div class="card-arrow">›</div>
+  </a>
+
+  <a href="oto-quiz.html" class="card c-oto" style="animation-delay:0.15s">
+    <div class="card-icon">🔊</div>
+    <div class="card-body">
+      <div class="card-title">音の性質</div>
+      <div class="card-desc">振動・伝わり方・音の速さ計算・ドップラー効果</div>
+      <div>
+        <span class="card-badge badge-shogaku">小学生</span>
+        <span class="card-badge badge-nyushi" style="margin-left:4px">中学入試</span>
+      </div>
+    </div>
+    <div class="card-arrow">›</div>
+  </a>
+
+</div>
+
+<div class="section-label">🌿 生き物・植物（準備中）</div>
+<div class="grid">
+  <div class="card card-coming" style="animation-delay:0.2s">
+    <div class="card-icon">🌱</div>
+    <div class="card-body"><div class="card-title">植物のつくり（準備中）</div><div class="card-desc">もうすぐ追加予定！</div></div>
+    <div class="card-arrow">›</div>
+  </div>
+  <div class="card card-coming" style="animation-delay:0.25s">
+    <div class="card-icon">🦋</div>
+    <div class="card-body"><div class="card-title">昆虫・動物（準備中）</div><div class="card-desc">もうすぐ追加予定！</div></div>
+    <div class="card-arrow">›</div>
+  </div>
+</div>
+
+<div class="section-label">🌡️ 物質・エネルギー（準備中）</div>
+<div class="grid">
+  <div class="card card-coming" style="animation-delay:0.3s">
+    <div class="card-icon">🌡️</div>
+    <div class="card-body"><div class="card-title">熱のはたらき（準備中）</div><div class="card-desc">もうすぐ追加予定！</div></div>
+    <div class="card-arrow">›</div>
+  </div>
+  <div class="card card-coming" style="animation-delay:0.35s">
+    <div class="card-icon">⚡</div>
+    <div class="card-body"><div class="card-title">電気のはたらき（準備中）</div><div class="card-desc">もうすぐ追加予定！</div></div>
+    <div class="card-arrow">›</div>
+  </div>
+</div>
+
+<a href="https://shoi141.github.io/calc-quiz/" class="other-link">
+  ✏️ 算数クイズはこちら →
+</a>
+
+<div class="footer">問題はランダム出題・○×・選択・記述・計算の4形式 🔬</div>
+
+</body>
+</html>

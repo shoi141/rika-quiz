@@ -1,0 +1,592 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+<title>光の性質 理科クイズ</title>
+<link rel="stylesheet" href="common.css">
+<script src="https://cdnjs.cloudflare.com/ajax/libs/react/18.2.0/umd/react.production.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/react-dom/18.2.0/umd/react-dom.production.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/babel-standalone/7.23.2/babel.min.js"></script>
+<script src="rika-common.js"></script>
+<style>
+  body { background: #fff7ed; }
+  .cursor-blink { color: #f97316; }
+
+  /* 理科クイズ専用スタイル */
+  .rika-root {
+    min-height: 100vh; background: #fff7ed;
+    padding: 12px; max-width: 480px; margin: 0 auto;
+    display: flex; flex-direction: column; gap: 10px;
+  }
+
+  /* ○× ボタン */
+  .ox-row { display: flex; gap: 12px; }
+  .ox-btn {
+    flex: 1; height: 80px; border: none; border-radius: 20px;
+    font-size: 40px; font-weight: 900; cursor: pointer;
+    transition: transform 0.08s; box-shadow: 0 4px 0 rgba(0,0,0,0.2);
+  }
+  .ox-btn:active { transform: translateY(3px); box-shadow: 0 1px 0 rgba(0,0,0,0.2); }
+  .ox-btn.maru { background: linear-gradient(135deg,#ff6b6b,#ee5a24); color:#fff; }
+  .ox-btn.batsu { background: linear-gradient(135deg,#4a90d9,#0652DD); color:#fff; }
+  .ox-btn.selected-correct { background: #2ecc71; box-shadow: 0 4px 0 #27ae60; }
+  .ox-btn.selected-wrong   { background: #e74c3c; box-shadow: 0 4px 0 #c0392b; opacity:0.6; }
+
+  /* 選択肢ボタン */
+  .select-grid { display: flex; flex-direction: column; gap: 8px; }
+  .select-btn {
+    width: 100%; padding: 14px 16px; border: 2px solid #e5e7eb;
+    border-radius: 14px; background: #fff; cursor: pointer;
+    font-size: 14px; font-weight: bold; text-align: left;
+    transition: all 0.1s; font-family: inherit;
+    box-shadow: 0 2px 0 #e5e7eb;
+  }
+  .select-btn:active { transform: translateY(1px); }
+  .select-btn.correct { background: #d1fae5; border-color: #10b981; color: #065f46; box-shadow: 0 2px 0 #10b981; }
+  .select-btn.wrong   { background: #fee2e2; border-color: #ef4444; color: #991b1b; opacity:0.7; }
+  .select-btn.show-correct { background: #d1fae5; border-color: #10b981; color: #065f46; }
+  .select-btn.disabled { cursor: default; }
+
+  /* テキスト入力 */
+  .input-area {
+    background: #fff; border: 2px solid #e5e7eb; border-radius: 14px;
+    padding: 12px 14px; display: flex; flex-direction: column; gap: 8px;
+  }
+  .input-area.focused { border-color: #f97316; box-shadow: 0 0 0 3px rgba(249,115,22,0.15); }
+  .input-area.correct { border-color: #10b981; background: #d1fae5; }
+  .input-area.wrong   { border-color: #ef4444; background: #fee2e2; }
+  .input-label { font-size: 11px; font-weight: bold; color: #9ca3af; text-transform: uppercase; letter-spacing: 0.05em; }
+  .input-field {
+    width: 100%; border: none; outline: none; font-size: 18px;
+    font-weight: bold; background: transparent; font-family: inherit;
+    color: #1f2937;
+  }
+  .input-field::placeholder { color: #d1d5db; font-weight: normal; }
+  .correct-ans-hint { font-size: 13px; color: #065f46; font-weight: bold; }
+
+  /* 計算キーパッド */
+  .calc-keypad { background: #fde8d0; border-radius: 18px; padding: 10px; display: flex; flex-direction: column; gap: 6px; }
+
+  /* 解説カード */
+  .explanation-card {
+    background: #fef3c7; border: 1.5px solid #f59e0b;
+    border-radius: 12px; padding: 12px 14px; font-size: 13px;
+    color: #78350f; line-height: 1.8;
+  }
+  .explanation-label { font-weight: 900; margin-bottom: 4px; font-size: 12px; color: #92400e; }
+
+  /* 難易度バッジ */
+  .diff-badge {
+    font-size: 10px; font-weight: bold; padding: 2px 8px;
+    border-radius: 99px; margin-left: 6px;
+  }
+  .diff-shogaku { background: #dcfce7; color: #166534; }
+  .diff-nyushi  { background: #fef3c7; color: #92400e; }
+
+  /* 結果画面の正解率バー */
+  .result-detail { display:flex; flex-direction:column; gap:6px; margin:12px 0; }
+  .result-row    { display:flex; justify-content:space-between; font-size:13px; }
+
+  /* 難易度選択 */
+  .diff-btn-row { display:flex; flex-direction:column; gap:8px; margin-bottom:20px; }
+  .diff-card-btn {
+    display:flex; align-items:center; gap:12px;
+    padding:12px 16px; border-radius:14px; cursor:pointer;
+    text-align:left; border:2px solid transparent;
+  }
+  .diff-card-btn .diff-emoji { font-size:24px; flex-shrink:0; }
+  .diff-card-btn .diff-name  { font-weight:900; font-size:15px; }
+  .diff-card-btn .diff-desc  { font-size:11px; color:#6b7280; margin-top:2px; }
+</style>
+</head>
+<body>
+<div id="root"></div>
+<script type="text/babel">
+const { useState, useEffect, useRef } = React;
+const STORAGE_KEY = "hikari_best_streak";
+
+// ─── KEYPAD（計算問題用）───────────────────────────────────
+const CALC_KEYPAD = [
+  [{label:"7",val:"7"},{label:"8",val:"8"},{label:"9",val:"9"},{label:".",val:"."}],
+  [{label:"4",val:"4"},{label:"5",val:"5"},{label:"6",val:"6"},{label:"×",val:"×"}],
+  [{label:"1",val:"1"},{label:"2",val:"2"},{label:"3",val:"3"},{label:"÷",val:"÷"}],
+  [{label:"0",val:"0"},{label:"00",val:"00"},{label:"⌫",val:"BACK"},{label:"C",val:"CLEAR"}],
+];
+
+// ─── 問題バンク ────────────────────────────────────────────
+const PROBLEMS_SHOGAKU = [
+  // ○×
+  { qtype:"ox", diff:"shogaku", title:"光の直進", color:"#f97316",
+    question:"光はまっすぐ進む。",
+    correct:true,
+    explanation:"光は空気の中をまっすぐ（直進）に進みます。影ができるのもこのためです。" },
+  { qtype:"ox", diff:"shogaku", title:"光の反射", color:"#f97316",
+    question:"鏡に当たった光は、どこかに消えてしまう。",
+    correct:false,
+    explanation:"光は鏡に当たると「反射」して、別の方向に進みます。消えることはありません。" },
+  { qtype:"ox", diff:"shogaku", title:"虫めがねと光", color:"#f97316",
+    question:"虫めがねで日光を集めると、1点に集まって明るくなる。",
+    correct:true,
+    explanation:"虫めがね（凸レンズ）は光を屈折させて1点（焦点）に集めます。明るく熱くなります。" },
+  { qtype:"ox", diff:"shogaku", title:"光の数と明るさ", color:"#f97316",
+    question:"鏡で光を集める枚数が多いほど、明るくなりあたたかくなる。",
+    correct:true,
+    explanation:"光を集める枚数が多いほど、光が重なって明るく・あたたかくなります。" },
+  { qtype:"ox", diff:"shogaku", title:"反射の法則", color:"#ea580c",
+    question:"鏡に光が当たるとき、入射角と反射角は等しい。",
+    correct:true,
+    explanation:"光の反射の法則：入射角＝反射角。鏡の面に垂直な線（法線）に対しての角度が等しくなります。" },
+
+  // 選択問題
+  { qtype:"select", diff:"shogaku", title:"光の性質", color:"#f97316",
+    question:"光が鏡に当たったとき起きる現象を何といいますか？",
+    options:["①屈折","②反射","③吸収","④直進"],
+    answer:1,
+    explanation:"鏡などで光がはね返ることを「反射」といいます。" },
+  { qtype:"select", diff:"shogaku", title:"虫めがね", color:"#f97316",
+    question:"虫めがねのレンズはどんな形をしていますか？",
+    options:["①中央がうすい","②中央があつい","③両面が平ら","④端があつい"],
+    answer:1,
+    explanation:"虫めがねは「凸レンズ」で、中央が厚く、光を集める性質があります。" },
+  { qtype:"select", diff:"shogaku", title:"日光と温度", color:"#f97316",
+    question:"虫めがねで日光を集めた点は、普通の日光と比べてどうなりますか？",
+    options:["①温度が同じ","②温度が低い","③温度が高い","④光だけ強くなる"],
+    answer:2,
+    explanation:"虫めがねで光を集めると温度が高くなります。焦点では紙が燃えることもあります。" },
+
+  // 名称・穴埋め入力
+  { qtype:"input", diff:"shogaku", title:"光の用語", color:"#f97316",
+    question:"光が水やガラスなど別の物質を通るとき、境界面で曲がる現象を何といいますか？",
+    answers:["屈折","くっせつ"],
+    unit:"",
+    explanation:"光が異なる物質の境界を通るとき「屈折」が起きます。ストローが水の中で曲がって見えるのはこのためです。" },
+  { qtype:"input", diff:"shogaku", title:"影のできる理由", color:"#f97316",
+    question:"光がまっすぐ進む性質を何といいますか？（漢字2文字）",
+    answers:["直進","ちょくしん"],
+    unit:"",
+    explanation:"光の「直進」する性質があるため、物の後ろに光の当たらない部分（影）ができます。" },
+];
+
+const PROBLEMS_NYUSHI = [
+  // ○×
+  { qtype:"ox", diff:"nyushi", title:"光の屈折", color:"#dc2626",
+    question:"光は空気より水中のほうが速く進む。",
+    correct:false,
+    explanation:"光の速さは空気中より水中や ガラス中のほうが遅くなります。速さが遅くなる物質ほど屈折角が小さくなります。" },
+  { qtype:"ox", diff:"nyushi", title:"全反射", color:"#dc2626",
+    question:"光が水中から空気に出るとき、入射角が大きくなりすぎると全反射が起きる。",
+    correct:true,
+    explanation:"光が密な媒質から疎な媒質へ進むとき、入射角が「臨界角」を超えると全反射が起きます。光ファイバーに利用されています。" },
+  { qtype:"ox", diff:"nyushi", title:"凸レンズと倒立像", color:"#dc2626",
+    question:"凸レンズで物体が焦点の外側にあるとき、スクリーンにできる像は上下左右が逆になる。",
+    correct:true,
+    explanation:"凸レンズで物体が焦点距離より外にあるとき、スクリーンには「実像（上下左右逆の倒立像）」ができます。" },
+
+  // 選択問題（入試レベル）
+  { qtype:"select", diff:"nyushi", title:"凸レンズの焦点距離", color:"#dc2626",
+    question:"物体を凸レンズの焦点上に置いたとき、スクリーンにできる像はどうなりますか？",
+    options:["①非常に小さな像","②非常に大きな像","③像はできない","④正立の像"],
+    answer:2,
+    explanation:"焦点に物体を置くと、レンズを通った光は平行光線となり、スクリーンには像ができません。" },
+  { qtype:"select", diff:"nyushi", title:"光の速さ", color:"#dc2626",
+    question:"光が1秒間に進む距離として正しいものはどれですか？",
+    options:["①約30万km","②約3万km","③約300km","④約30km"],
+    answer:0,
+    explanation:"光の速さは真空中で約30万km/s（秒速約30万キロメートル）です。" },
+  { qtype:"select", diff:"nyushi", title:"分散", color:"#dc2626",
+    question:"白色光（太陽光）をプリズムに通すと七色に分かれます。この現象を何といいますか？",
+    options:["①反射","②全反射","③分散","④干渉"],
+    answer:2,
+    explanation:"白色光がプリズムを通ると波長の違いにより屈折角が異なり「分散」が起きます。虹も同じ原理です。" },
+
+  // 計算問題
+  { qtype:"calc", diff:"nyushi", title:"光の反射計算", color:"#dc2626",
+    question:"平面鏡に対して入射角が35°のとき、反射角は何度ですか？",
+    answer:35, unit:"度",
+    explanation:"反射の法則より「入射角＝反射角」です。入射角35°→反射角35°。" },
+  { qtype:"calc", diff:"nyushi", title:"焦点距離の計算", color:"#dc2626",
+    question:"物体を凸レンズの中心から30cm離して置いたら、\nレンズの反対側20cmのところに実像ができました。\n焦点距離は何cmですか？（1/f = 1/a + 1/bの式を使う）",
+    answer:12, unit:"cm",
+    explanation:"1/f = 1/30 + 1/20 = 2/60 + 3/60 = 5/60\nf = 12cm" },
+
+  // 入力問題（入試レベル）
+  { qtype:"input", diff:"nyushi", title:"光の単元用語", color:"#dc2626",
+    question:"凸レンズで物体が焦点より内側にあるとき\n虚像は正立・拡大で見えます。\nこのとき「虚像」はスクリーンに映りますか、映りませんか？（映る／映らない）",
+    answers:["映らない","うつらない"],
+    unit:"",
+    explanation:"虚像はスクリーンに映すことができません。虫めがねで物体を拡大して見るときが虚像の例です。" },
+  { qtype:"input", diff:"nyushi", title:"光ファイバー", color:"#dc2626",
+    question:"光が密な媒質から疎な媒質に入るとき、ある角度を超えると光が全て反射されます。この現象を何といいますか？（漢字）",
+    answers:["全反射","ぜんはんしゃ"],
+    unit:"",
+    explanation:"「全反射」は光ファイバーの原理として利用されています。インターネット回線などに応用されています。" },
+];
+
+function getProblems(diff) {
+  if (diff === "shogaku") return [...PROBLEMS_SHOGAKU];
+  if (diff === "nyushi")  return [...PROBLEMS_NYUSHI];
+  return [...PROBLEMS_SHOGAKU, ...PROBLEMS_NYUSHI];
+}
+
+function pickProblems(diff, total) {
+  const pool = getProblems(diff);
+  const result = [];
+  const used = new Set();
+  while (result.length < total) {
+    const idx = randInt(0, pool.length - 1);
+    if (!used.has(idx) || pool.length < total) {
+      used.add(idx);
+      result.push({...pool[idx]});
+    }
+  }
+  return result;
+}
+
+// ─── 問題UIコンポーネント ──────────────────────────────────
+
+function OXAnswer({ problem, checked, userAnswer, onAnswer }) {
+  const isCorrect = userAnswer === problem.correct;
+  return (
+    <div className="ox-row">
+      {[true, false].map(val => {
+        let cls = val ? "ox-btn maru" : "ox-btn batsu";
+        if (checked) {
+          if (val === problem.correct) cls += " selected-correct";
+          else if (userAnswer === val) cls += " selected-wrong";
+        }
+        return (
+          <button key={String(val)} className={cls}
+            onClick={() => !checked && onAnswer(val)}
+            disabled={checked}>
+            {val ? "○" : "×"}
+          </button>
+        );
+      })}
+    </div>
+  );
+}
+
+function SelectAnswer({ problem, checked, userAnswer, onAnswer }) {
+  return (
+    <div className="select-grid">
+      {problem.options.map((opt, i) => {
+        let cls = "select-btn";
+        if (checked) {
+          if (i === problem.answer) cls += " show-correct";
+          else if (userAnswer === i) cls += " wrong";
+          cls += " disabled";
+        }
+        return (
+          <button key={i} className={cls}
+            onClick={() => !checked && onAnswer(i)}
+            disabled={checked}>
+            {opt}
+          </button>
+        );
+      })}
+    </div>
+  );
+}
+
+function InputAnswer({ problem, checked, userAnswer, onAnswer, inputVal, setInputVal }) {
+  const inputRef = useRef(null);
+  const isCorrect = checked ? judgeInput(userAnswer || "", problem.answers) : null;
+  let cls = "input-area";
+  if (checked) cls += isCorrect ? " correct" : " wrong";
+
+  return (
+    <div className={cls} onClick={() => inputRef.current && inputRef.current.focus()}>
+      <div className="input-label">📝 答えを入力</div>
+      <input
+        ref={inputRef}
+        className="input-field"
+        type="text"
+        placeholder="ここに入力…"
+        value={inputVal}
+        onChange={e => !checked && setInputVal(e.target.value)}
+        onKeyDown={e => { if (e.key === "Enter" && !checked && inputVal) onAnswer(inputVal); }}
+        disabled={checked}
+        autoComplete="off"
+      />
+      {!checked && inputVal && (
+        <button style={{alignSelf:"flex-end",background:"linear-gradient(135deg,#fb923c,#f97316)",color:"#fff",border:"none",borderRadius:"10px",padding:"8px 20px",fontWeight:"900",fontSize:"14px",cursor:"pointer"}}
+          onClick={() => onAnswer(inputVal)}>
+          決定 ✔
+        </button>
+      )}
+      {checked && !isCorrect && (
+        <div className="correct-ans-hint">✅ 正解：{problem.answers[0]}</div>
+      )}
+    </div>
+  );
+}
+
+function CalcAnswer({ problem, checked, userAnswer, onAnswer }) {
+  const [val, setVal] = useState("");
+  const isCorrect = checked ? Math.abs(parseFloat(val) - problem.answer) < 0.01 : null;
+
+  const pressKey = (k) => {
+    if (k === "BACK")  { setVal(v => v.slice(0,-1)); return; }
+    if (k === "CLEAR") { setVal(""); return; }
+    if (k === "." && val.includes(".")) return;
+    if (val.length >= 8) return;
+    setVal(v => v + k);
+  };
+
+  return (
+    <>
+      <div className={`input-area${checked ? (isCorrect ? " correct" : " wrong") : ""}`}>
+        <div className="input-label">🔢 計算して答えを入力</div>
+        <div style={{fontSize:"24px",fontWeight:"900",color:"#1f2937",minHeight:"32px"}}>
+          {val || <span style={{color:"#d1d5db",fontWeight:"normal",fontSize:"16px"}}>?</span>}
+          {!checked && <span style={{display:"inline-block",animation:"blink 1s step-end infinite",color:"#f97316"}}>|</span>}
+          {val && <span style={{fontSize:"14px",color:"#6b7280",marginLeft:"4px"}}>{problem.unit}</span>}
+        </div>
+        {checked && !isCorrect && (
+          <div className="correct-ans-hint">✅ 正解：{problem.answer}{problem.unit}</div>
+        )}
+      </div>
+      {!checked && (
+        <div className="calc-keypad">
+          {CALC_KEYPAD.map((row, ri) => (
+            <div key={ri} className="key-row">
+              {row.map(key => (
+                <button key={key.val} className="key-btn"
+                  style={{background: key.val==="BACK"||key.val==="CLEAR" ? "#ff8787" : key.val==="×"||key.val==="÷" ? "#74c0fc" : "#fff",
+                          color: key.val==="BACK"||key.val==="CLEAR" ? "#fff" : "#1f2937",
+                          boxShadow:"0 3px 0 rgba(0,0,0,0.15)"}}
+                  onClick={() => pressKey(key.val)}>{key.label}</button>
+              ))}
+            </div>
+          ))}
+          <button style={{width:"100%",padding:"12px",background:"linear-gradient(135deg,#fb923c,#f97316)",color:"#fff",border:"none",borderRadius:"12px",fontSize:"15px",fontWeight:"900",cursor:"pointer",boxShadow:"0 3px 0 #c2410c"}}
+            onClick={() => val && onAnswer(val)}>
+            答え合わせ ✔
+          </button>
+        </div>
+      )}
+    </>
+  );
+}
+
+// ─── メインアプリ ──────────────────────────────────────────
+function App() {
+  const [mode, setMode]         = useState("setup");
+  const [diff, setDiff]         = useState("mix");
+  const [totalQ, setTotalQ]     = useState(10);
+  const [problems, setProblems] = useState([]);
+  const [current, setCurrent]   = useState(0);
+  const [score, setScore]       = useState(0);
+  const [streak, setStreak]     = useState(0);
+  const [best, setBest]         = useState(0);
+  const [checked, setChecked]   = useState(false);
+  const [userAnswer, setUserAnswer] = useState(null);
+  const [inputVal, setInputVal] = useState("");
+  const [celeb, setCeleb]       = useState(false);
+  const [isCorrect, setIsCorrect] = useState(false);
+
+  useEffect(() => {
+    try { const s = localStorage.getItem(STORAGE_KEY); if (s) setBest(parseInt(s)||0); } catch(_) {}
+  }, []);
+  const saveBest = v => { try { localStorage.setItem(STORAGE_KEY, String(v)); } catch(_) {} };
+
+  const startQuiz = () => {
+    setProblems(pickProblems(diff, totalQ));
+    setCurrent(0); setScore(0); setStreak(0);
+    setChecked(false); setUserAnswer(null); setInputVal(""); setCeleb(false);
+    setMode("quiz");
+  };
+
+  const problem = problems[current] || null;
+
+  const handleAnswer = (ans) => {
+    if (checked) return;
+    setUserAnswer(ans);
+    setChecked(true);
+
+    let correct = false;
+    const p = problem;
+    if (p.qtype === "ox")     correct = (ans === p.correct);
+    else if (p.qtype === "select") correct = (ans === p.answer);
+    else if (p.qtype === "input")  correct = judgeInput(ans, p.answers);
+    else if (p.qtype === "calc")   correct = Math.abs(parseFloat(ans) - p.answer) < 0.01;
+
+    setIsCorrect(correct);
+    if (correct) {
+      setScore(s => s+1);
+      const ns = streak + 1; setStreak(ns);
+      if (ns > best) { setBest(ns); saveBest(ns); }
+      setCeleb(true); setTimeout(() => setCeleb(false), 1800);
+    } else {
+      setStreak(0);
+    }
+  };
+
+  const nextQuestion = () => {
+    if (current + 1 >= totalQ) { setMode("result"); return; }
+    setCurrent(c => c+1);
+    setChecked(false); setUserAnswer(null); setInputVal(""); setCeleb(false);
+  };
+
+  const progress = problem ? (current / totalQ) * 100 : 0;
+  const BTN = "linear-gradient(135deg,#fb923c,#f97316)";
+
+  // ── セットアップ ──
+  if (mode === "setup") return (
+    <div className="setup-wrap" style={{background:"#fff7ed"}}>
+      <div className="setup-card">
+        <div className="setup-emoji">💡</div>
+        <h1 className="setup-title" style={{color:"#9a3412"}}>光の性質 理科クイズ</h1>
+        <p className="setup-sub">小学生〜中学入試レベル</p>
+        {best > 0 && <div className="best-badge" style={{background:"#ffedd5",border:"1.5px solid #fb923c",color:"#9a3412"}}>🏆 最高連続記録：<strong>{best}問</strong></div>}
+
+        <div className="qcount-section">レベルを選ぶ</div>
+        <div className="diff-btn-row">
+          {[
+            {key:"shogaku", emoji:"🌱", name:"小学生レベル", desc:"光の直進・反射・虫めがねの基本"},
+            {key:"nyushi",  emoji:"🔥", name:"中学入試レベル", desc:"屈折・凸レンズ・全反射・計算問題"},
+            {key:"mix",     emoji:"⭐", name:"ミックス", desc:"全問題からランダムに出題"},
+          ].map(d => (
+            <button key={d.key} className="diff-card-btn"
+              style={{background: diff===d.key ? "#fff7ed" : "#f9fafb",
+                      border: diff===d.key ? "2px solid #f97316" : "2px solid #e5e7eb",
+                      boxShadow: diff===d.key ? "0 3px 0 #f97316" : "none"}}
+              onClick={() => setDiff(d.key)}>
+              <span className="diff-emoji">{d.emoji}</span>
+              <div>
+                <div className="diff-name" style={{color: diff===d.key ? "#9a3412" : "#1f2937"}}>{d.name}</div>
+                <div className="diff-desc">{d.desc}</div>
+              </div>
+              {diff===d.key && <span style={{marginLeft:"auto",fontSize:"18px"}}>✅</span>}
+            </button>
+          ))}
+        </div>
+
+        <div className="qcount-section">何問やる？</div>
+        <div className="qcount-grid">
+          {Q_OPTIONS.map(n => (
+            <button key={n} className="qcount-btn"
+              style={{border: totalQ===n ? "2px solid #f97316" : "2px solid #dee2e6",
+                      background: totalQ===n ? "#f97316" : "#f8f9fa",
+                      color: totalQ===n ? "#fff" : "#495057",
+                      boxShadow: totalQ===n ? "0 3px 0 #c2410c" : "none"}}
+              onClick={() => setTotalQ(n)}>{n}問</button>
+          ))}
+        </div>
+        <button className="start-btn" style={{background:BTN, color:"#fff", boxShadow:"0 4px 0 #c2410c"}}
+          onClick={startQuiz}>スタート！ 🚀</button>
+      </div>
+    </div>
+  );
+
+  // ── 結果 ──
+  if (mode === "result") {
+    const pct = Math.round((score/totalQ)*100);
+    return (
+      <div className="setup-wrap" style={{background:"#fff7ed"}}>
+        <div className="setup-card">
+          <div className="setup-emoji">{pct===100?"🏆":pct>=70?"🎉":"💪"}</div>
+          <h2 className="setup-title" style={{color:"#9a3412"}}>おわり！</h2>
+          <p className="result-score">{totalQ}問中 <span className="result-big" style={{color:"#f97316"}}>{score}</span> 問正解</p>
+          <div className="pct-bar-bg" style={{background:"#ffedd5"}}><div className="pct-bar-fill" style={{background:BTN, width:`${pct}%`}}/></div>
+          <p className="pct-text">{pct}%</p>
+          <div className="streak-result-row">
+            <div className="streak-result-box"><div className="streak-result-label">この回の最高連続</div><div className="streak-result-val" style={{color:"#ef4444"}}>🔥 {streak}問</div></div>
+            <div className="streak-result-box"><div className="streak-result-label">歴代最高連続</div><div className="streak-result-val" style={{color:"#f59f00"}}>🏆 {best}問</div></div>
+          </div>
+          <div style={{display:"flex",gap:"8px",marginTop:"16px"}}>
+            <button className="start-btn" style={{background:BTN,color:"#fff",boxShadow:"0 4px 0 #c2410c"}} onClick={startQuiz}>もう一度</button>
+            <button className="start-btn" style={{background:"#868e96",color:"#fff",boxShadow:"0 4px 0 #495057"}} onClick={() => setMode("setup")}>設定へ</button>
+          </div>
+        </div>
+      </div>
+    );
+  }
+
+  if (!problem) return null;
+
+  // ── クイズ画面 ──
+  return (
+    <div className="rika-root">
+      {celeb && (
+        <div className="celeb-overlay">
+          <div className="celeb-box">
+            <div className="celeb-emoji">🎉</div>
+            <div className="celeb-text" style={{color:"#9a3412"}}>せいかい！</div>
+            <div className="celeb-stars">{randomStars(5)}</div>
+            {streak >= 3 && <div className="celeb-streak" style={{background:"#ef4444"}}>🔥 {streak}れんぞく！</div>}
+            {streak === best && streak > 1 && <div className="celeb-streak" style={{background:"#f59f00",marginTop:"6px"}}>🏆 新記録！</div>}
+          </div>
+        </div>
+      )}
+
+      {/* ヘッダー */}
+      <div className="quiz-header">
+        <div className="header-left">
+          <span className="q-label">Q{current+1}<span className="q-total">/{totalQ}</span></span>
+          <span className="type-tag" style={{background:problem.color}}>{problem.title}</span>
+          <span className={`diff-badge ${problem.diff === "nyushi" ? "diff-nyushi" : "diff-shogaku"}`}>
+            {problem.diff === "nyushi" ? "入試" : "小学"}
+          </span>
+        </div>
+        <div className="header-right">
+          <span className="score-label">⭐ {score}</span>
+          {streak >= 2 && <span className="streak-tag-sm">🔥{streak}</span>}
+          {best > 0 && <span className="best-tag-sm">🏆{best}</span>}
+        </div>
+      </div>
+
+      {/* プログレスバー */}
+      <div className="progress-bg" style={{background:"#ffedd5"}}>
+        <div className="progress-fill" style={{background:problem.color, width:`${progress}%`}}/>
+      </div>
+
+      {/* 問題文 */}
+      <div className="problem-card" style={{borderTop:`5px solid ${problem.color}`}}>
+        {problem.question.split("\n").map((line, i) => (
+          <p key={i} className="problem-line" style={{fontSize:"16px"}}>{line}</p>
+        ))}
+      </div>
+
+      {/* 問題タイプ別入力UI */}
+      {problem.qtype === "ox" && (
+        <OXAnswer problem={problem} checked={checked} userAnswer={userAnswer} onAnswer={handleAnswer}/>
+      )}
+      {problem.qtype === "select" && (
+        <SelectAnswer problem={problem} checked={checked} userAnswer={userAnswer} onAnswer={handleAnswer}/>
+      )}
+      {problem.qtype === "input" && (
+        <InputAnswer problem={problem} checked={checked} userAnswer={userAnswer}
+          onAnswer={handleAnswer} inputVal={inputVal} setInputVal={setInputVal}/>
+      )}
+      {problem.qtype === "calc" && (
+        <CalcAnswer problem={problem} checked={checked} userAnswer={userAnswer} onAnswer={handleAnswer}/>
+      )}
+
+      {/* 正誤フィードバック＋解説 */}
+      {checked && (
+        <>
+          <div style={{textAlign:"center", fontSize:"20px", fontWeight:"900",
+            color: isCorrect ? "#059669" : "#dc2626"}}>
+            {isCorrect ? "✅ せいかい！" : "❌ ざんねん…"}
+          </div>
+          <div className="explanation-card">
+            <div className="explanation-label">📖 解説</div>
+            {problem.explanation}
+          </div>
+          <button className="next-btn"
+            style={{background:"linear-gradient(135deg,#51cf66,#20c997)",color:"#fff",boxShadow:"0 4px 0 #2f9e44"}}
+            onClick={nextQuestion}>
+            {current+1 >= totalQ ? "結果を見る 🎉" : "つぎへ →"}
+          </button>
+        </>
+      )}
+    </div>
+  );
+}
+
+ReactDOM.createRoot(document.getElementById("root")).render(<App/>);
+</script>
+</body>
+</html>
