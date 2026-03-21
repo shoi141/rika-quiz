@@ -875,11 +875,11 @@ function App() {
         <SelectAnswer problem={problem} checked={checked} userAnswer={userAnswer} onAnswer={handleAnswer}/>
       )}
       {problem.qtype === "input" && (
-        <InputAnswer problem={problem} checked={checked} userAnswer={userAnswer}
+        <InputAnswer key={current} problem={problem} checked={checked} userAnswer={userAnswer}
           onAnswer={handleAnswer} inputVal={inputVal} setInputVal={setInputVal}/>
       )}
       {problem.qtype === "calc" && (
-        <CalcAnswer problem={problem} checked={checked} userAnswer={userAnswer} onAnswer={handleAnswer}/>
+        <CalcAnswer key={current} problem={problem} checked={checked} userAnswer={userAnswer} onAnswer={handleAnswer}/>
       )}
 
       {/* 正誤フィードバック＋解説 */}

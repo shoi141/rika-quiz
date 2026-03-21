@@ -466,8 +466,8 @@ function App() {
       </div>
       {problem.qtype==="ox"     && <OXAnswer     problem={problem} checked={checked} userAnswer={userAnswer} onAnswer={handleAnswer}/>}
       {problem.qtype==="select" && <SelectAnswer problem={problem} checked={checked} userAnswer={userAnswer} onAnswer={handleAnswer}/>}
-      {problem.qtype==="input"  && <InputAnswer  problem={problem} checked={checked} userAnswer={userAnswer} onAnswer={handleAnswer} inputVal={inputVal} setInputVal={setInputVal}/>}
-      {problem.qtype==="calc"   && <CalcAnswer   problem={problem} checked={checked} userAnswer={userAnswer} onAnswer={handleAnswer}/>}
+      {problem.qtype==="input"  && <InputAnswer  key={current} problem={problem} checked={checked} userAnswer={userAnswer} onAnswer={handleAnswer} inputVal={inputVal} setInputVal={setInputVal}/>}
+      {problem.qtype==="calc"   && <CalcAnswer   key={current} problem={problem} checked={checked} userAnswer={userAnswer} onAnswer={handleAnswer}/>}
       {checked && (
         <>
           <div style={{textAlign:"center",fontSize:"20px",fontWeight:"900",color:isCorrect?"#059669":"#dc2626"}}>
