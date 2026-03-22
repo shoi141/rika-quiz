@@ -4,1035 +4,450 @@
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
 <title>光の性質 理科クイズ</title>
+<link rel="stylesheet" href="common.css">
 <script src="https://cdnjs.cloudflare.com/ajax/libs/react/18.2.0/umd/react.production.min.js"></script>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/react-dom/18.2.0/umd/react-dom.production.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/babel-standalone/7.23.2/babel.min.js"></script>
+<script src="rika-common.js"></script>
 <style>
-/* ── リセット ─────────────────────────── */
-* { box-sizing: border-box; margin: 0; padding: 0; -webkit-tap-highlight-color: transparent; }
-body { font-family: 'Hiragino Maru Gothic ProN', 'Noto Sans JP', sans-serif; }
+  body { background: #fff7ed; }
+  .cursor-blink { color: #f97316; }
 
-/* ── アニメーション ───────────────────── */
-@keyframes blink  { 0%,100%{opacity:1} 50%{opacity:0} }
-@keyframes popIn  { from{transform:scale(0.7);opacity:0} to{transform:scale(1);opacity:1} }
-@keyframes floatUp{ from{opacity:0;transform:translateY(20px)} to{opacity:1;transform:translateY(0)} }
+  /* 理科クイズ専用スタイル */
+  .rika-root {
+    min-height: 100vh; background: #fff7ed;
+    padding: 12px; max-width: 480px; margin: 0 auto;
+    display: flex; flex-direction: column; gap: 10px;
+  }
 
-/* ── 汎用クラス ───────────────────────── */
-.cursor-blink { display:inline-block; animation:blink 1s step-end infinite; }
-button { -webkit-appearance:none; touch-action:manipulation; }
-button:active { transform:translateY(2px) !important; box-shadow:0 1px 0 rgba(0,0,0,0.18) !important; }
+  /* ○× ボタン */
+  .ox-row { display: flex; gap: 12px; }
+  .ox-btn {
+    flex: 1; height: 80px; border: none; border-radius: 20px;
+    font-size: 40px; font-weight: 900; cursor: pointer;
+    transition: transform 0.08s; box-shadow: 0 4px 0 rgba(0,0,0,0.2);
+  }
+  .ox-btn:active { transform: translateY(3px); box-shadow: 0 1px 0 rgba(0,0,0,0.2); }
+  .ox-btn.maru { background: linear-gradient(135deg,#ff6b6b,#ee5a24); color:#fff; }
+  .ox-btn.batsu { background: linear-gradient(135deg,#4a90d9,#0652DD); color:#fff; }
+  .ox-btn.selected-correct { background: #2ecc71; box-shadow: 0 4px 0 #27ae60; }
+  .ox-btn.selected-wrong   { background: #e74c3c; box-shadow: 0 4px 0 #c0392b; opacity:0.6; }
 
-/* ── クイズ共通レイアウト ─────────────── */
-.quiz-root {
-  min-height: 100vh;
-  padding: 12px;
-  max-width: 480px;
-  margin: 0 auto;
-  display: flex;
-  flex-direction: column;
-  gap: 10px;
-  box-sizing: border-box;
-}
+  /* 選択肢ボタン */
+  .select-grid { display: flex; flex-direction: column; gap: 8px; }
+  .select-btn {
+    width: 100%; padding: 14px 16px; border: 2px solid #e5e7eb;
+    border-radius: 14px; background: #fff; cursor: pointer;
+    font-size: 14px; font-weight: bold; text-align: left;
+    transition: all 0.1s; font-family: inherit;
+    box-shadow: 0 2px 0 #e5e7eb;
+  }
+  .select-btn:active { transform: translateY(1px); }
+  .select-btn.correct { background: #d1fae5; border-color: #10b981; color: #065f46; box-shadow: 0 2px 0 #10b981; }
+  .select-btn.wrong   { background: #fee2e2; border-color: #ef4444; color: #991b1b; opacity:0.7; }
+  .select-btn.show-correct { background: #d1fae5; border-color: #10b981; color: #065f46; }
+  .select-btn.disabled { cursor: default; }
 
-/* ── セットアップ / 結果カード ────────── */
-.setup-wrap {
-  min-height: 100vh;
-  display: flex;
-  align-items: flex-start;
-  justify-content: center;
-  padding: 20px 12px;
-}
-.setup-card {
-  background: #fff;
-  border-radius: 20px;
-  padding: 32px 24px;
-  text-align: center;
-  box-shadow: 0 4px 24px rgba(0,0,0,0.10);
-  margin-top: 16px;
-  width: 100%;
-  max-width: 400px;
-}
-.setup-emoji { font-size: 56px; margin-bottom: 8px; }
-.setup-title { font-size: 24px; font-weight: 900; margin: 0 0 4px; }
-.setup-sub   { color: #6b7280; font-size: 13px; margin-bottom: 20px; }
-.best-badge  {
-  border-radius: 12px; padding: 10px 16px;
-  font-size: 15px; margin-bottom: 20px; display: inline-block;
-}
-.qcount-section {
-  font-size: 13px; font-weight: bold; color: #6b7280;
-  margin-bottom: 10px; text-transform: uppercase; letter-spacing: 0.05em;
-}
-.qcount-grid { display: flex; gap: 10px; justify-content: center; margin-bottom: 24px; }
-.qcount-btn  {
-  padding: 12px 18px; border-radius: 12px;
-  font-size: 16px; font-weight: bold; cursor: pointer;
-}
-.start-btn {
-  width: 100%; padding: 14px;
-  border: none; border-radius: 14px;
-  font-size: 16px; font-weight: 900; cursor: pointer;
-}
+  /* テキスト入力 */
+  .input-area {
+    background: #fff; border: 2px solid #e5e7eb; border-radius: 14px;
+    padding: 12px 14px; display: flex; flex-direction: column; gap: 8px;
+  }
+  .input-area.focused { border-color: #f97316; box-shadow: 0 0 0 3px rgba(249,115,22,0.15); }
+  .input-area.correct { border-color: #10b981; background: #d1fae5; }
+  .input-area.wrong   { border-color: #ef4444; background: #fee2e2; }
+  .input-label { font-size: 11px; font-weight: bold; color: #9ca3af; text-transform: uppercase; letter-spacing: 0.05em; }
+  .input-field {
+    width: 100%; border: none; outline: none; font-size: 18px;
+    font-weight: bold; background: transparent; font-family: inherit;
+    color: #1f2937;
+  }
+  .input-field::placeholder { color: #d1d5db; font-weight: normal; }
+  .correct-ans-hint { font-size: 13px; color: #065f46; font-weight: bold; }
 
-/* ── 結果画面 ─────────────────────────── */
-.result-score { font-size: 16px; color: #374151; margin: 0 0 8px; }
-.result-big   { font-size: 48px; font-weight: bold; }
-.pct-bar-bg   { height: 10px; border-radius: 99px; margin: 8px 0 4px; }
-.pct-bar-fill { height: 100%; border-radius: 99px; }
-.pct-text     { text-align: center; color: #6b7280; font-size: 14px; margin-bottom: 16px; }
-.streak-result-row { display: flex; gap: 10px; }
-.streak-result-box {
-  flex: 1; background: #f9fafb; border-radius: 12px;
-  padding: 12px; text-align: center;
-}
-.streak-result-label { font-size: 11px; color: #6b7280; font-weight: bold; margin-bottom: 4px; }
-.streak-result-val   { font-size: 20px; font-weight: 900; }
+  /* 計算キーパッド */
+  .calc-keypad { background: #fde8d0; border-radius: 18px; padding: 10px; display: flex; flex-direction: column; gap: 6px; }
 
-/* ── ヘッダー ─────────────────────────── */
-.quiz-header  { display: flex; justify-content: space-between; align-items: center; }
-.header-left  { display: flex; align-items: center; gap: 8px; }
-.header-right { display: flex; align-items: center; gap: 6px; }
-.q-label { font-weight: 900; font-size: 20px; }
-.q-total { font-size: 13px; color: #adb5bd; font-weight: normal; }
-.type-tag {
-  font-size: 11px; font-weight: bold; color: #fff;
-  padding: 3px 10px; border-radius: 99px;
-}
-.score-label { font-size: 14px; font-weight: bold; }
-.streak-tag-sm {
-  background: #ef4444; color: #fff; font-size: 12px;
-  padding: 2px 8px; border-radius: 99px; font-weight: bold;
-}
-.best-tag-sm {
-  background: #fde68a; color: #92400e; font-size: 12px;
-  padding: 2px 8px; border-radius: 99px; font-weight: bold;
-}
+  /* 解説カード */
+  .explanation-card {
+    background: #fef3c7; border: 1.5px solid #f59e0b;
+    border-radius: 12px; padding: 12px 14px; font-size: 13px;
+    color: #78350f; line-height: 1.8;
+  }
+  .explanation-label { font-weight: 900; margin-bottom: 4px; font-size: 12px; color: #92400e; }
 
-/* ── プログレスバー ───────────────────── */
-.progress-bg   { height: 6px; border-radius: 99px; }
-.progress-fill { height: 100%; border-radius: 99px; transition: width 0.4s; }
+  /* 難易度バッジ */
+  .diff-badge {
+    font-size: 10px; font-weight: bold; padding: 2px 8px;
+    border-radius: 99px; margin-left: 6px;
+  }
+  .diff-shogaku { background: #dcfce7; color: #166534; }
+  .diff-nyushi  { background: #fef3c7; color: #92400e; }
 
-/* ── 問題文カード ─────────────────────── */
-.problem-card {
-  background: #fff; border-radius: 16px;
-  padding: 16px 18px; box-shadow: 0 2px 12px rgba(0,0,0,0.08);
-}
-.problem-line  { margin: 4px 0; font-size: 15px; line-height: 1.8; color: #1f2937; }
-.problem-em    { font-size: 18px; font-weight: 900; }
+  /* 結果画面の正解率バー */
+  .result-detail { display:flex; flex-direction:column; gap:6px; margin:12px 0; }
+  .result-row    { display:flex; justify-content:space-between; font-size:13px; }
 
-/* ── ヒント ───────────────────────────── */
-.hint-section  { display: flex; flex-direction: column; gap: 6px; }
-.hint-controls { display: flex; gap: 8px; align-items: center; }
-.hint-btn {
-  align-self: flex-start;
-  background: #fefce8; border: 1.5px solid #fde047;
-  border-radius: 20px; padding: 6px 14px;
-  font-size: 13px; color: #a16207; font-weight: bold; cursor: pointer;
-}
-.hint-close-btn {
-  background: #fff; border: 1.5px solid #e5e7eb;
-  border-radius: 20px; padding: 6px 12px;
-  font-size: 12px; color: #6b7280; font-weight: bold; cursor: pointer;
-}
-.hint-box {
-  background: #fefce8; border-radius: 12px;
-  padding: 12px 14px; border: 1.5px solid #fde047;
-}
-
-/* ── 途中式エリア ─────────────────────── */
-.scratch-area {
-  background: #fff; border-radius: 14px;
-  padding: 10px 14px; min-height: 72px;
-  cursor: text; transition: border-color 0.2s, background 0.2s;
-}
-.scratch-area-label-row {
-  display: flex; justify-content: space-between;
-  align-items: center; margin-bottom: 6px;
-}
-.scratch-area-label {
-  font-size: 11px; font-weight: bold; color: #adb5bd;
-  text-transform: uppercase; letter-spacing: 0.05em;
-}
-.scratch-area-hint { font-size: 10px; color: #d1d5db; }
-.scratch-display {
-  font-size: 15px; color: #1f2937; line-height: 1.6;
-  min-height: 24px; font-family: monospace; word-break: break-all;
-}
-.scratch-placeholder { color: #d1d5db; font-size: 14px; font-family: inherit; }
-.calc-result-badge {
-  display: inline-block; font-weight: 900; font-size: 16px;
-  padding: 0 4px; border-radius: 4px;
-}
-
-/* ── 答え欄 ───────────────────────────── */
-.answers-row { display: flex; gap: 8px; }
-.answer-slot {
-  flex: 1; background: #fff;
-  border-radius: 14px; padding: 10px 12px;
-  cursor: text; transition: all 0.2s;
-  position: relative; min-height: 72px;
-}
-.ans-label   { font-size: 11px; font-weight: bold; color: #6b7280; margin-bottom: 4px; }
-.ans-display { font-size: 22px; font-weight: 900; color: #1f2937; }
-.ans-unit    { font-size: 13px; color: #6b7280; }
-.ans-badge   { position: absolute; top: 8px; right: 10px; font-size: 16px; }
-.ans-correct-val { font-size: 12px; font-weight: bold; margin-top: 2px; }
-
-/* ── キーパッド ───────────────────────── */
-.keypad     { border-radius: 18px; padding: 10px; display: flex; flex-direction: column; gap: 6px; }
-.key-row    { display: flex; gap: 6px; }
-.key-btn {
-  flex: 1; height: 52px; border-radius: 12px; border: none;
-  font-size: 18px; font-weight: bold; cursor: pointer;
-  font-family: inherit; transition: transform 0.08s, box-shadow 0.08s;
-  box-shadow: 0 3px 0 rgba(0,0,0,0.18);
-}
-.key-btn.calc { font-size: 13px; font-weight: 900; }
-.key-btn.disabled { box-shadow: none; cursor: default; }
-
-/* ── アクションボタン ─────────────────── */
-.action-row { display: flex; gap: 8px; padding-bottom: 16px; }
-.check-btn, .next-btn, .retry-btn {
-  padding: 14px; border: none; border-radius: 14px;
-  font-size: 16px; font-weight: 900; cursor: pointer;
-}
-.check-btn { flex: 1; }
-.next-btn  { flex: 1; }
-.retry-btn {
-  padding: 14px 18px; background: #fff;
-  border: 2px solid #e5e7eb; color: #6b7280; font-size: 14px;
-}
-
-/* ── 正解エフェクト ───────────────────── */
-.celeb-overlay {
-  position: fixed; inset: 0; background: rgba(0,0,0,0.35);
-  display: flex; align-items: center; justify-content: center; z-index: 100;
-}
-.celeb-box {
-  background: #fff; border-radius: 24px;
-  padding: 40px 48px; text-align: center;
-  box-shadow: 0 20px 60px rgba(0,0,0,0.3);
-  animation: popIn 0.35s cubic-bezier(.34,1.56,.64,1);
-}
-.celeb-emoji  { font-size: 64px; margin-bottom: 8px; }
-.celeb-text   { font-size: 32px; font-weight: 900; }
-.celeb-stars  { font-size: 20px; margin-top: 8px; }
-.celeb-streak {
-  margin-top: 12px; color: #fff;
-  padding: 6px 16px; border-radius: 99px;
-  font-weight: bold; font-size: 16px; display: inline-block;
-}
-
-/* ── 消去算専用：ビジュアルヒント ────── */
-.eq-visual {
-  background: #f0f9ff; border-radius: 12px;
-  padding: 12px 14px; border: 1.5px solid #bae6fd; margin-top: 6px;
-}
-.eq-visual-title { font-size: 12px; color: #0369a1; font-weight: bold; margin-bottom: 8px; }
-.eq-row { display: flex; align-items: center; flex-wrap: wrap; gap: 4px; padding: 3px 0; }
-.eq-sep { font-size: 13px; font-weight: bold; color: #6b7280; margin: 0 1px; }
-.eq-eq  { font-size: 14px; font-weight: bold; color: #374151; margin: 0 4px; }
-.eq-result { font-size: 16px; font-weight: 900; color: #1e293b; }
-.eq-note {
-  font-size: 11px; color: #0ea5e9; background: #e0f2fe;
-  padding: 2px 7px; border-radius: 10px; white-space: nowrap;
-}
-.pill {
-  display: inline-flex; align-items: center; gap: 4px;
-  border-radius: 16px; padding: 3px 8px;
-  font-size: 12px; font-weight: bold;
-  white-space: nowrap; flex-shrink: 0;
-  border-width: 2px; border-style: solid;
-}
-.pill-count {
-  color: #fff; border-radius: 10px;
-  padding: 1px 6px; font-size: 11px;
-}
-.eq-divider {
-  border-top: 2px dashed #7dd3fc; margin: 8px 0;
-  position: relative;
-}
-.eq-divider-label {
-  position: absolute; top: -11px; left: 50%; transform: translateX(-50%);
-  background: #0ea5e9; color: #fff; font-size: 10px;
-  padding: 2px 8px; border-radius: 10px; white-space: nowrap;
-}
-.replace-visual {
-  background: #f0f9ff; border-radius: 12px;
-  padding: 12px 14px; border: 1.5px solid #bae6fd; margin-top: 6px;
-}
-.replace-row-label { font-size: 11px; font-weight: bold; color: #0369a1; margin-bottom: 4px; }
-.replace-diff {
-  background: #fef3c7; border: 1.5px solid #fcd34d;
-  border-radius: 8px; padding: 8px 10px;
-}
-.replace-diff-main  { font-size: 12px; color: #92400e; font-weight: bold; }
-.replace-diff-note  { font-size: 11px; color: #78350f; margin-top: 3px; }
-
-/* ── 答え合わせ確認モーダル ──────────────── */
-.confirm-overlay {
-  position: fixed; inset: 0;
-  background: rgba(0,0,0,0.4);
-  display: flex; align-items: flex-end; justify-content: center;
-  z-index: 200;
-  animation: fadeIn 0.15s ease;
-}
-@keyframes fadeIn { from{opacity:0} to{opacity:1} }
-.confirm-sheet {
-  background: #fff;
-  border-radius: 24px 24px 0 0;
-  padding: 28px 24px 36px;
-  width: 100%; max-width: 480px;
-  animation: slideUp 0.2s ease;
-}
-@keyframes slideUp { from{transform:translateY(60px);opacity:0} to{transform:translateY(0);opacity:1} }
-.confirm-title {
-  font-size: 18px; font-weight: 900;
-  text-align: center; margin-bottom: 6px; color: #1e293b;
-}
-.confirm-sub {
-  font-size: 13px; color: #64748b;
-  text-align: center; margin-bottom: 20px;
-}
-.confirm-btn-row { display: flex; gap: 10px; }
-.confirm-ok-btn, .confirm-cancel-btn {
-  flex: 1; padding: 14px; border: none;
-  border-radius: 14px; font-size: 16px;
-  font-weight: 900; cursor: pointer;
-}
-.confirm-cancel-btn {
-  background: #f1f5f9; color: #64748b;
-  box-shadow: 0 3px 0 #cbd5e1;
-}
-.confirm-ok-btn {
-  box-shadow: 0 4px 0 #f59f00;
-}
-
-body { background: #fff7ed; }
-.cursor-blink { color: #f97316; }
-.rika-root { min-height:100vh;background:#fff7ed;padding:12px;max-width:480px;margin:0 auto;display:flex;flex-direction:column;gap:10px; }
-
-.rika-root{min-height:100vh;padding:12px;max-width:480px;margin:0 auto;display:flex;flex-direction:column;gap:10px;}
-.ox-row{display:flex;gap:12px;}
-.ox-btn{flex:1;height:80px;border:none;border-radius:20px;font-size:40px;font-weight:900;cursor:pointer;box-shadow:0 4px 0 rgba(0,0,0,0.2);}
-.ox-btn.maru{background:linear-gradient(135deg,#ff6b6b,#ee5a24);color:#fff;}
-.ox-btn.batsu{background:linear-gradient(135deg,#4a90d9,#0652DD);color:#fff;}
-.ox-btn.selected-correct{background:#2ecc71;}
-.ox-btn.selected-wrong{background:#e74c3c;opacity:0.6;}
-.select-grid{display:flex;flex-direction:column;gap:8px;}
-.select-btn{width:100%;padding:14px 16px;border:2px solid #e5e7eb;border-radius:14px;background:#fff;cursor:pointer;font-size:14px;font-weight:bold;text-align:left;font-family:inherit;}
-.select-btn.correct{background:#d1fae5;border-color:#10b981;color:#065f46;}
-.select-btn.wrong{background:#fee2e2;border-color:#ef4444;color:#991b1b;opacity:0.7;}
-.select-btn.show-correct{background:#d1fae5;border-color:#10b981;color:#065f46;}
-.input-area{background:#fff;border:2px solid #e5e7eb;border-radius:14px;padding:12px 14px;display:flex;flex-direction:column;gap:8px;}
-.input-area.correct{border-color:#10b981;background:#d1fae5;}
-.input-area.wrong{border-color:#ef4444;background:#fee2e2;}
-.input-label{font-size:11px;font-weight:bold;color:#9ca3af;}
-.input-field{width:100%;border:none;outline:none;font-size:18px;font-weight:bold;background:transparent;font-family:inherit;color:#1f2937;}
-.input-field::placeholder{color:#d1d5db;font-weight:normal;}
-.correct-ans-hint{font-size:13px;color:#065f46;font-weight:bold;}
-.explanation-card{background:#fef3c7;border:1.5px solid #f59e0b;border-radius:12px;padding:12px 14px;font-size:13px;color:#78350f;line-height:1.8;}
-.diff-badge{font-size:10px;font-weight:bold;padding:2px 8px;border-radius:99px;margin-left:6px;}
-.diff-shogaku{background:#dcfce7;color:#166534;}
-.diff-nyushi{background:#fef3c7;color:#92400e;}
-.diff-btn-row{display:flex;flex-direction:column;gap:8px;margin-bottom:20px;}
-.diff-card-btn{display:flex;align-items:center;gap:12px;padding:12px 16px;border-radius:14px;cursor:pointer;text-align:left;border:2px solid transparent;}
-.diff-card-btn .diff-name{font-weight:900;font-size:15px;}
-.diff-card-btn .diff-desc{font-size:11px;color:#6b7280;margin-top:2px;}
-
+  /* 難易度選択 */
+  .diff-btn-row { display:flex; flex-direction:column; gap:8px; margin-bottom:20px; }
+  .diff-card-btn {
+    display:flex; align-items:center; gap:12px;
+    padding:12px 16px; border-radius:14px; cursor:pointer;
+    text-align:left; border:2px solid transparent;
+  }
+  .diff-card-btn .diff-emoji { font-size:24px; flex-shrink:0; }
+  .diff-card-btn .diff-name  { font-weight:900; font-size:15px; }
+  .diff-card-btn .diff-desc  { font-size:11px; color:#6b7280; margin-top:2px; }
 </style>
 </head>
 <body>
 <div id="root"></div>
-<script>
-// ── 理科クイズ共通ユーティリティ ─────────────────────────
-
-function randInt(min, max) {
-  return Math.floor(Math.random() * (max - min + 1)) + min;
-}
-function randomStars(n) {
-  return Array.from({length:n}, () => ["⭐","🌟","✨"][randInt(0,2)]).join(" ");
-}
-
-// ── 日本語入力の正規化・採点 ──────────────────────────────
-function normalizeJa(str) {
-  return str
-    .trim()
-    .replace(/\s+/g, "")
-    // カタカナ→ひらがな
-    .replace(/[\u30A1-\u30F6]/g, c => String.fromCharCode(c.charCodeAt(0) - 0x60))
-    // 全角英数→半角
-    .replace(/[Ａ-Ｚａ-ｚ０-９]/g, c => String.fromCharCode(c.charCodeAt(0) - 0xFEE0))
-    .toLowerCase();
-}
-
-function judgeInput(userInput, correctList) {
-  const norm = normalizeJa(userInput);
-  if (!norm) return false;
-  return correctList.some(ans => normalizeJa(ans) === norm);
-}
-
-// ── 問題数の選択肢 ────────────────────────────────────────
-const Q_OPTIONS = [5, 10, 15, 20];
-
-</script>
-<script>
-const QUIZ_KEY="hikari";
-
-const REVIEW_CORRECT_NEEDED = 5;
-function _rvId(p){return((p.title||"")+"|"+(p._genType!==undefined?String(p._genType):p.question||"")).slice(0,60);}
-function rvGetAll(k){try{var r=localStorage.getItem("rv_"+k);return r?JSON.parse(r):[];}catch(e){return[];}}
-function _rvSave(k,b){try{localStorage.setItem("rv_"+k,JSON.stringify(b));}catch(e){}}
-function rvAdd(k,p){try{var b=rvGetAll(k),id=_rvId(p),ex=b.find(function(x){return x._id===id;});if(ex){ex.miss=(ex.miss||0)+1;ex.ok=0;}else{var s={};Object.keys(p).forEach(function(key){if(key!=="figure")s[key]=p[key];});s._id=id;s._t=Date.now();s.miss=1;s.ok=0;b.push(s);} _rvSave(k,b);}catch(e){}}
-function rvCorrect(k,p){try{var b=rvGetAll(k),id=_rvId(p),i=b.findIndex(function(x){return x._id===id;});if(i<0)return false;b[i].ok=(b[i].ok||0)+1;var g=b[i].ok>=REVIEW_CORRECT_NEEDED;if(g)b.splice(i,1);_rvSave(k,b);return g;}catch(e){return false;}}
-function rvGetProblems(k){return rvGetAll(k);}
-
-</script>
-<script>
-const {
-  useState,
-  useEffect,
-  useRef
-} = React;
-const QUIZ_KEY="hikari";const STORAGE_KEY = "hikari_best_streak";
+<script type="text/babel">
+const { useState, useEffect, useRef } = React;
+const STORAGE_KEY = "hikari_best_streak";
 
 // ─── KEYPAD（計算問題用）───────────────────────────────────
-const CALC_KEYPAD = [[{
-  label: "7",
-  val: "7"
-}, {
-  label: "8",
-  val: "8"
-}, {
-  label: "9",
-  val: "9"
-}, {
-  label: ".",
-  val: "."
-}], [{
-  label: "4",
-  val: "4"
-}, {
-  label: "5",
-  val: "5"
-}, {
-  label: "6",
-  val: "6"
-}, {
-  label: "×",
-  val: "×"
-}], [{
-  label: "1",
-  val: "1"
-}, {
-  label: "2",
-  val: "2"
-}, {
-  label: "3",
-  val: "3"
-}, {
-  label: "÷",
-  val: "÷"
-}], [{
-  label: "0",
-  val: "0"
-}, {
-  label: "00",
-  val: "00"
-}, {
-  label: "⌫",
-  val: "BACK"
-}, {
-  label: "C",
-  val: "CLEAR"
-}]];
+const CALC_KEYPAD = [
+  [{label:"7",val:"7"},{label:"8",val:"8"},{label:"9",val:"9"},{label:".",val:"."}],
+  [{label:"4",val:"4"},{label:"5",val:"5"},{label:"6",val:"6"},{label:"×",val:"×"}],
+  [{label:"1",val:"1"},{label:"2",val:"2"},{label:"3",val:"3"},{label:"÷",val:"÷"}],
+  [{label:"0",val:"0"},{label:"00",val:"00"},{label:"⌫",val:"BACK"},{label:"C",val:"CLEAR"}],
+];
 
 // ─── 問題バンク ────────────────────────────────────────────
 const PROBLEMS_SHOGAKU = [
-// ○×
-{
-  qtype: "ox",
-  diff: "shogaku",
-  title: "光の直進",
-  color: "#f97316",
-  question: "光はまっすぐ進む。",
-  correct: true,
-  explanation: "光は空気の中をまっすぐ（直進）に進みます。影ができるのもこのためです。"
-}, {
-  qtype: "ox",
-  diff: "shogaku",
-  title: "光の反射",
-  color: "#f97316",
-  question: "鏡に当たった光は、どこかに消えてしまう。",
-  correct: false,
-  explanation: "光は鏡に当たると「反射」して、別の方向に進みます。消えることはありません。"
-}, {
-  qtype: "ox",
-  diff: "shogaku",
-  title: "虫めがねと光",
-  color: "#f97316",
-  question: "虫めがねで日光を集めると、1点に集まって明るくなる。",
-  correct: true,
-  explanation: "虫めがね（凸レンズ）は光を屈折させて1点（焦点）に集めます。明るく熱くなります。"
-}, {
-  qtype: "ox",
-  diff: "shogaku",
-  title: "光の数と明るさ",
-  color: "#f97316",
-  question: "鏡で光を集める枚数が多いほど、明るくなりあたたかくなる。",
-  correct: true,
-  explanation: "光を集める枚数が多いほど、光が重なって明るく・あたたかくなります。"
-}, {
-  qtype: "ox",
-  diff: "shogaku",
-  title: "反射の法則",
-  color: "#ea580c",
-  question: "鏡に光が当たるとき、入射角と反射角は等しい。",
-  correct: true,
-  explanation: "光の反射の法則：入射角＝反射角。鏡の面に垂直な線（法線）に対しての角度が等しくなります。"
-},
-// 選択問題
-{
-  qtype: "select",
-  diff: "shogaku",
-  title: "光の性質",
-  color: "#f97316",
-  question: "光が鏡に当たったとき起きる現象を何といいますか？",
-  options: ["①屈折", "②反射", "③吸収", "④直進"],
-  answer: 1,
-  explanation: "鏡などで光がはね返ることを「反射」といいます。"
-}, {
-  qtype: "select",
-  diff: "shogaku",
-  title: "虫めがね",
-  color: "#f97316",
-  question: "虫めがねのレンズはどんな形をしていますか？",
-  options: ["①中央がうすい", "②中央があつい", "③両面が平ら", "④端があつい"],
-  answer: 1,
-  explanation: "虫めがねは「凸レンズ」で、中央が厚く、光を集める性質があります。"
-}, {
-  qtype: "select",
-  diff: "shogaku",
-  title: "日光と温度",
-  color: "#f97316",
-  question: "虫めがねで日光を集めた点は、普通の日光と比べてどうなりますか？",
-  options: ["①温度が同じ", "②温度が低い", "③温度が高い", "④光だけ強くなる"],
-  answer: 2,
-  explanation: "虫めがねで光を集めると温度が高くなります。焦点では紙が燃えることもあります。"
-},
-// 名称・穴埋め入力
-{
-  qtype: "input",
-  diff: "shogaku",
-  title: "光の用語",
-  color: "#f97316",
-  question: "光が水やガラスなど別の物質を通るとき、境界面で曲がる現象を何といいますか？",
-  answers: ["屈折", "くっせつ"],
-  unit: "",
-  explanation: "光が異なる物質の境界を通るとき「屈折」が起きます。ストローが水の中で曲がって見えるのはこのためです。"
-}, {
-  qtype: "input",
-  diff: "shogaku",
-  title: "影のできる理由",
-  color: "#f97316",
-  question: "光がまっすぐ進む性質を何といいますか？（漢字2文字）",
-  answers: ["直進", "ちょくしん"],
-  unit: "",
-  explanation: "光の「直進」する性質があるため、物の後ろに光の当たらない部分（影）ができます。"
-},
-// ── 教科書①光の進み方 ─────────────────────────────────────
-{
-  qtype: "select",
-  diff: "shogaku",
-  title: "光の進み方①",
-  color: "#f97316",
-  question: "おわんに水を入れると底が浅く見えました。\nこれは光のどの性質によるものですか？",
-  options: ["①光の直進", "②光の反射", "③光の屈折"],
-  answer: 2,
-  explanation: "水と空気の境界で光が曲がる「屈折」のため、底が実際より浅く見えます。"
-}, {
-  qtype: "select",
-  diff: "shogaku",
-  title: "光の進み方②",
-  color: "#f97316",
-  question: "森の中で木の葉のすき間から太陽の光がまっすぐさしていました。\nこれは光のどの性質ですか？",
-  options: ["①光の直進", "②光の反射", "③光の屈折"],
-  answer: 0,
-  explanation: "光がまっすぐ進む「直進」の性質を示しています。木もれ日はこの性質でできます。"
-}, {
-  qtype: "select",
-  diff: "shogaku",
-  title: "光の進み方③",
-  color: "#f97316",
-  question: "晴れた日に水たまりが光って見えました。\nこれは光のどの性質ですか？",
-  options: ["①光の直進", "②光の反射", "③光の屈折"],
-  answer: 1,
-  explanation: "水面が光を「反射」するため、水たまりが光って見えます。"
-},
-// ── 教科書②光の反射 ──────────────────────────────────────
-{
-  qtype: "input",
-  diff: "shogaku",
-  title: "光の反射①",
-  color: "#f97316",
-  question: "ものに当たった光がはね返ることを何といいますか？",
-  answers: ["反射", "はんしゃ"],
-  unit: "",
-  explanation: "光がものに当たってはね返ることを「反射」といいます。鏡はこの性質を利用しています。"
-}, {
-  qtype: "ox",
-  diff: "shogaku",
-  title: "光の反射②",
-  color: "#f97316",
-  question: "入射角と反射角の大きさは等しい。",
-  correct: true,
-  explanation: "光の反射の法則：「入射角＝反射角」。鏡の面に垂直な線（法線）に対する角度が等しくなります。"
-}, {
-  qtype: "select",
-  diff: "shogaku",
-  title: "光の反射③",
-  color: "#f97316",
-  question: "入射角と反射角はどのような関係ですか？",
-  options: ["①入射角のほうが大きい", "②反射角のほうが大きい", "③入射角と反射角は同じ大きさ"],
-  answer: 2,
-  explanation: "入射角と反射角は必ず等しくなります。これを「光の反射の法則」といいます。"
-}, {
-  qtype: "input",
-  diff: "shogaku",
-  title: "光の反射④",
-  color: "#f97316",
-  question: "鏡の面に対して垂直に引いた線を何といいますか？（入射角・反射角はこの線との角度）",
-  answers: ["法線", "ほうせん"],
-  unit: "",
-  explanation: "鏡の面に垂直な線を「法線」といいます。入射角・反射角はこの法線との間の角度で表します。"
-},
-// ── 教科書③光の屈折 ──────────────────────────────────────
-{
-  qtype: "ox",
-  diff: "shogaku",
-  title: "光の屈折①",
-  color: "#f97316",
-  question: "コップの水にストローを入れると、ストローが折れて見えるのは光の屈折によるものである。",
-  correct: true,
-  explanation: "水と空気の境界で光が「屈折」するため、ストローが折れているように見えます。"
-}, {
-  qtype: "select",
-  diff: "shogaku",
-  title: "光の屈折②",
-  color: "#f97316",
-  question: "光が空気から水に進むとき、境界面で光はどうなりますか？",
-  options: ["①まっすぐ進む", "②曲がる（屈折する）", "③すべて反射する"],
-  answer: 1,
-  explanation: "光が異なる物質の境界を通るとき「屈折」が起きて向きが変わります。"
-}, {
-  qtype: "input",
-  diff: "shogaku",
-  title: "全反射",
-  color: "#f97316",
-  question: "入射角を大きくしていくと、やがて光がすべて反射して屈折しなくなります。\nこの現象を何といいますか？",
-  answers: ["全反射", "ぜんはんしゃ"],
-  unit: "",
-  explanation: "「全反射」といいます。光ファイバーはこの性質を利用しています。"
-}, {
-  qtype: "select",
-  diff: "shogaku",
-  title: "光の分散",
-  color: "#f97316",
-  question: "白色光を三角柱のガラス（プリズム）に通すと、光が色に分かれます。\n赤色とむらさき色では、どちらがより屈折しやすいですか？",
-  options: ["①赤色", "②むらさき色", "③どちらも同じ"],
-  answer: 1,
-  explanation: "むらさき色（波長が短い）のほうが屈折しやすく、赤色（波長が長い）は屈折しにくいです。虹もこの原理です。"
-},
-// ── 教科書④ものに当たった光 ──────────────────────────────
-{
-  qtype: "select",
-  diff: "shogaku",
-  title: "反射しやすい板",
-  color: "#f97316",
-  question: "光のリレーで的に光を当てるには、どの板が最もよいですか？",
-  options: ["①鏡", "②アルミはくをはった板", "③透明なガラス板", "④白いぬのをはった板"],
-  answer: 0,
-  explanation: "鏡は光を一定の方向に強く反射します。アルミ箔は乱反射するため向きを調整しにくいです。"
-}, {
-  qtype: "ox",
-  diff: "shogaku",
-  title: "乱反射",
-  color: "#f97316",
-  question: "表面がでこぼこのものに光が当たると、光はいろいろな方向に反射する。",
-  correct: true,
-  explanation: "表面がでこぼこの場合、光が様々な方向に反射します。これを「乱反射」といいます。白い紙が全方向から見えるのはこのためです。"
-},
-// ── 教科書⑤光の明るさとあたたかさ ──────────────────────
-{
-  qtype: "select",
-  diff: "shogaku",
-  title: "光の明るさ①",
-  color: "#ea580c",
-  question: "鏡で光を重ねて当てると、明るさやあたたかさはどうなりますか？",
-  options: ["①変わらない", "②明るくなり、あたたかくなる", "③暗くなる"],
-  answer: 1,
-  explanation: "光を重ねるほど明るくなり、温度も高くなります。枚数が多いほどこの効果が大きくなります。"
-}, {
-  qtype: "ox",
-  diff: "shogaku",
-  title: "光の明るさ②",
-  color: "#ea580c",
-  question: "鏡の枚数を増やして光を重ねても、あたたかさは変わらない。",
-  correct: false,
-  explanation: "鏡の枚数が増えるほど光が重なり、明るくなるだけでなくあたたかさも増します。"
-}, {
-  qtype: "select",
-  diff: "shogaku",
-  title: "光の重なりと温度",
-  color: "#ea580c",
-  question: "2枚の鏡で光が重なっている部分と、1枚の鏡だけが当たっている部分を比べると、温度が高いのはどちらですか？",
-  options: ["①1枚だけの部分", "②2枚が重なっている部分", "③温度は同じ"],
-  answer: 1,
-  explanation: "光が重なる部分ほどエネルギーが集まり、温度が高くなります。"
-},
-// ── 教科書⑥光と色による温度の違い ──────────────────────
-{
-  qtype: "select",
-  diff: "shogaku",
-  title: "色と光の吸収",
-  color: "#ea580c",
-  question: "同じ量の水を日光に当てたとき、最も温度が高くなる水はどれですか？",
-  options: ["①水道の水（透明）", "②白色の絵の具を溶かした水", "③黒色の絵の具を溶かした水"],
-  answer: 2,
-  explanation: "黒色は光を最もよく吸収するため、温度が最も高くなります。白色は光を反射するため温度が上がりにくいです。"
-}, {
-  qtype: "ox",
-  diff: "shogaku",
-  title: "黒色と光の吸収",
-  color: "#ea580c",
-  question: "黒いものは光を吸収しやすく、あたたまりやすい。",
-  correct: true,
-  explanation: "黒色は光（熱）を吸収しやすいため、白色より速く温度が上がります。夏に黒い服が暑く感じるのもこのためです。"
-}, {
-  qtype: "select",
-  diff: "shogaku",
-  title: "白色と光",
-  color: "#ea580c",
-  question: "白色と黒色では、光をよく反射するのはどちらですか？",
-  options: ["①白色", "②黒色", "③どちらも同じ"],
-  answer: 0,
-  explanation: "白色は光をよく反射し、黒色は光をよく吸収します。白い服が夏に涼しいのはこのためです。"
-},
-// ── 教科書⑦日光の利用 ────────────────────────────────────
-{
-  qtype: "select",
-  diff: "shogaku",
-  title: "日光の利用①",
-  color: "#ea580c",
-  question: "次のうち、日光を直接利用していないものはどれですか？",
-  options: ["①太陽熱温水器", "②ビニルハウス", "③熱気球"],
-  answer: 2,
-  explanation: "熱気球はバーナーで空気を加熱して飛びます。太陽熱温水器・ビニルハウスは日光を直接利用します。"
-}, {
-  qtype: "input",
-  diff: "shogaku",
-  title: "日光の利用②",
-  color: "#ea580c",
-  question: "反射板（パラボラ型）を使って日光を1点に集め、料理をする器具を何といいますか？",
-  answers: ["ソーラークッカー", "太陽炉", "たいようろ", "そーらーくっかー"],
-  unit: "",
-  explanation: "「ソーラークッカー」といいます。太陽の光を1点に集めて高温にすることで料理ができます。"
-}, {
-  qtype: "select",
-  diff: "shogaku",
-  title: "焦点の位置",
-  color: "#ea580c",
-  question: "パラボラ型の反射板で日光を集めるとき、なべを置くと最も早くあたたまるのはどこですか？",
-  options: ["①反射板の中心", "②光が1点に集まる焦点の位置", "③反射板のふち"],
-  answer: 1,
-  explanation: "光が1点に集まる「焦点」に置くと、最も多くの光エネルギーが集まり速くあたたまります。"
-},
-// ── 教科書⑧虫めがねを通った光 ──────────────────────────
-{
-  qtype: "select",
-  diff: "shogaku",
-  title: "虫めがねと光①",
-  color: "#ea580c",
-  question: "虫めがねを紙に近づけると、光が集まった部分（明るい部分）の面積はどうなりますか？",
-  options: ["①大きくなる", "②小さくなる", "③変わらない"],
-  answer: 1,
-  explanation: "虫めがねを近づけるほど焦点に近づき、光が集まった部分の面積は小さくなります。"
-}, {
-  qtype: "select",
-  diff: "shogaku",
-  title: "虫めがねと光②",
-  color: "#ea580c",
-  question: "虫めがねを紙に近づけると、光が集まった部分の明るさはどうなりますか？",
-  options: ["①明るくなる", "②暗くなる", "③変わらない"],
-  answer: 0,
-  explanation: "面積が小さくなるほど同じ光量が集中するため、明るくなります。"
-}, {
-  qtype: "input",
-  diff: "shogaku",
-  title: "焦点",
-  color: "#ea580c",
-  question: "虫めがねで光が1点に集まる点を何といいますか？",
-  answers: ["焦点", "しょうてん"],
-  unit: "",
-  explanation: "光が1点に集まる点を「焦点」といいます。焦点ではエネルギーが集中し、紙が燃えることもあります。"
-}, {
-  qtype: "input",
-  diff: "shogaku",
-  title: "焦点距離",
-  color: "#ea580c",
-  question: "虫めがねの中心から焦点までの距離を何といいますか？",
-  answers: ["焦点距離", "しょうてんきょり"],
-  unit: "",
-  explanation: "「焦点距離」といいます。レンズが厚いほど焦点距離は短くなります。"
-}, {
-  qtype: "select",
-  diff: "shogaku",
-  title: "厚いレンズと焦点距離",
-  color: "#ea580c",
-  question: "虫めがねを厚いレンズに変えると、焦点距離はどうなりますか？",
-  options: ["①長くなる", "②短くなる", "③変わらない"],
-  answer: 1,
-  explanation: "レンズが厚いほど光を強く曲げるため、焦点距離は短くなります。"
-},
-// ── 教科書⑨虫めがねで集めた光とあたたかさ ──────────────
-{
-  qtype: "ox",
-  diff: "shogaku",
-  title: "虫めがねと光量",
-  color: "#ea580c",
-  question: "同じ大きさの虫めがねを使うと、虫めがねを通る日光の量はいつも同じである。",
-  correct: true,
-  explanation: "同じ大きさの虫めがねを使えば、虫めがねを通る光の量は常に同じです。焦点に合わせるかどうかで集まり方が変わるだけです。"
-}, {
-  qtype: "select",
-  diff: "shogaku",
-  title: "ろうのとけ方",
-  color: "#ea580c",
-  question: "虫めがねでろうをぬった紙に日光を当てます。ろうが最も早くとけ始めるのはどの状態ですか？",
-  options: ["①虫めがねを紙から遠くはなしたとき", "②虫めがねを焦点の位置に合わせたとき", "③虫めがねを紙に近づけすぎたとき"],
-  answer: 1,
-  explanation: "焦点に合わせると光が1点に集中し、最も温度が高くなるため、ろうが最も早くとけます。"
-},
-// ── 教科書⑩虫めがねの大きさと集まる光 ───────────────────
-{
-  qtype: "select",
-  diff: "shogaku",
-  title: "虫めがねの大きさ①",
-  color: "#ea580c",
-  question: "大きい虫めがねと小さい虫めがねで集まる光の量を比べます。どちらが多いですか？",
-  options: ["①大きい虫めがね", "②小さい虫めがね", "③どちらも同じ"],
-  answer: 0,
-  explanation: "虫めがねが大きいほどより多くの光を集めることができます。"
-}, {
-  qtype: "ox",
-  diff: "shogaku",
-  title: "虫めがねの大きさ②",
-  color: "#ea580c",
-  question: "虫めがねが大きいほど、集まる光の量は多くなる。",
-  correct: true,
-  explanation: "虫めがねの面積が大きいほど多くの光を集められます。天体望遠鏡のレンズが大きいのもこのためです。"
-}, {
-  qtype: "select",
-  diff: "shogaku",
-  title: "紙の色と焦げ方",
-  color: "#ea580c",
-  question: "同じ虫めがねで、白い紙と黒い紙に光を集めます。早く焦げるのはどちらですか？",
-  options: ["①白い紙", "②黒い紙", "③どちらもほぼ同時"],
-  answer: 1,
-  explanation: "黒い紙は光（熱）を吸収しやすいため、白い紙より早く焦げます。"
-}, {
-  qtype: "select",
-  diff: "shogaku",
-  title: "実験の条件そろえ",
-  color: "#ea580c",
-  question: "大きさが違う虫めがねで明るさを比べる実験をします。同じにする条件はどれですか？",
-  options: ["①明るい部分の大きさ（面積）", "②虫めがねと紙の距離"],
-  answer: 0,
-  explanation: "比べる条件（明るさ）以外はそろえる必要があります。明るい部分の大きさ（面積）を同じにして比べます。"
-}];
+  // ○×
+  { qtype:"ox", diff:"shogaku", title:"光の直進", color:"#f97316",
+    question:"光はまっすぐ進む。",
+    correct:true,
+    explanation:"光は空気の中をまっすぐ（直進）に進みます。影ができるのもこのためです。" },
+  { qtype:"ox", diff:"shogaku", title:"光の反射", color:"#f97316",
+    question:"鏡に当たった光は、どこかに消えてしまう。",
+    correct:false,
+    explanation:"光は鏡に当たると「反射」して、別の方向に進みます。消えることはありません。" },
+  { qtype:"ox", diff:"shogaku", title:"虫めがねと光", color:"#f97316",
+    question:"虫めがねで日光を集めると、1点に集まって明るくなる。",
+    correct:true,
+    explanation:"虫めがね（凸レンズ）は光を屈折させて1点（焦点）に集めます。明るく熱くなります。" },
+  { qtype:"ox", diff:"shogaku", title:"光の数と明るさ", color:"#f97316",
+    question:"鏡で光を集める枚数が多いほど、明るくなりあたたかくなる。",
+    correct:true,
+    explanation:"光を集める枚数が多いほど、光が重なって明るく・あたたかくなります。" },
+  { qtype:"ox", diff:"shogaku", title:"反射の法則", color:"#ea580c",
+    question:"鏡に光が当たるとき、入射角と反射角は等しい。",
+    correct:true,
+    explanation:"光の反射の法則：入射角＝反射角。鏡の面に垂直な線（法線）に対しての角度が等しくなります。" },
+
+  // 選択問題
+  { qtype:"select", diff:"shogaku", title:"光の性質", color:"#f97316",
+    question:"光が鏡に当たったとき起きる現象を何といいますか？",
+    options:["①屈折","②反射","③吸収","④直進"],
+    answer:1,
+    explanation:"鏡などで光がはね返ることを「反射」といいます。" },
+  { qtype:"select", diff:"shogaku", title:"虫めがね", color:"#f97316",
+    question:"虫めがねのレンズはどんな形をしていますか？",
+    options:["①中央がうすい","②中央があつい","③両面が平ら","④端があつい"],
+    answer:1,
+    explanation:"虫めがねは「凸レンズ」で、中央が厚く、光を集める性質があります。" },
+  { qtype:"select", diff:"shogaku", title:"日光と温度", color:"#f97316",
+    question:"虫めがねで日光を集めた点は、普通の日光と比べてどうなりますか？",
+    options:["①温度が同じ","②温度が低い","③温度が高い","④光だけ強くなる"],
+    answer:2,
+    explanation:"虫めがねで光を集めると温度が高くなります。焦点では紙が燃えることもあります。" },
+
+  // 名称・穴埋め入力
+  { qtype:"input", diff:"shogaku", title:"光の用語", color:"#f97316",
+    question:"光が水やガラスなど別の物質を通るとき、境界面で曲がる現象を何といいますか？",
+    answers:["屈折","くっせつ"],
+    unit:"",
+    explanation:"光が異なる物質の境界を通るとき「屈折」が起きます。ストローが水の中で曲がって見えるのはこのためです。" },
+  { qtype:"input", diff:"shogaku", title:"影のできる理由", color:"#f97316",
+    question:"光がまっすぐ進む性質を何といいますか？（漢字2文字）",
+    answers:["直進","ちょくしん"],
+    unit:"",
+    explanation:"光の「直進」する性質があるため、物の後ろに光の当たらない部分（影）ができます。" },
+
+  // ── 教科書①光の進み方 ─────────────────────────────────────
+  { qtype:"select", diff:"shogaku", title:"光の進み方①", color:"#f97316",
+    question:"おわんに水を入れると底が浅く見えました。\nこれは光のどの性質によるものですか？",
+    options:["①光の直進","②光の反射","③光の屈折"],
+    answer:2,
+    explanation:"水と空気の境界で光が曲がる「屈折」のため、底が実際より浅く見えます。" },
+  { qtype:"select", diff:"shogaku", title:"光の進み方②", color:"#f97316",
+    question:"森の中で木の葉のすき間から太陽の光がまっすぐさしていました。\nこれは光のどの性質ですか？",
+    options:["①光の直進","②光の反射","③光の屈折"],
+    answer:0,
+    explanation:"光がまっすぐ進む「直進」の性質を示しています。木もれ日はこの性質でできます。" },
+  { qtype:"select", diff:"shogaku", title:"光の進み方③", color:"#f97316",
+    question:"晴れた日に水たまりが光って見えました。\nこれは光のどの性質ですか？",
+    options:["①光の直進","②光の反射","③光の屈折"],
+    answer:1,
+    explanation:"水面が光を「反射」するため、水たまりが光って見えます。" },
+
+  // ── 教科書②光の反射 ──────────────────────────────────────
+  { qtype:"input", diff:"shogaku", title:"光の反射①", color:"#f97316",
+    question:"ものに当たった光がはね返ることを何といいますか？",
+    answers:["反射","はんしゃ"],
+    unit:"",
+    explanation:"光がものに当たってはね返ることを「反射」といいます。鏡はこの性質を利用しています。" },
+  { qtype:"ox", diff:"shogaku", title:"光の反射②", color:"#f97316",
+    question:"入射角と反射角の大きさは等しい。",
+    correct:true,
+    explanation:"光の反射の法則：「入射角＝反射角」。鏡の面に垂直な線（法線）に対する角度が等しくなります。" },
+  { qtype:"select", diff:"shogaku", title:"光の反射③", color:"#f97316",
+    question:"入射角と反射角はどのような関係ですか？",
+    options:["①入射角のほうが大きい","②反射角のほうが大きい","③入射角と反射角は同じ大きさ"],
+    answer:2,
+    explanation:"入射角と反射角は必ず等しくなります。これを「光の反射の法則」といいます。" },
+  { qtype:"input", diff:"shogaku", title:"光の反射④", color:"#f97316",
+    question:"鏡の面に対して垂直に引いた線を何といいますか？（入射角・反射角はこの線との角度）",
+    answers:["法線","ほうせん"],
+    unit:"",
+    explanation:"鏡の面に垂直な線を「法線」といいます。入射角・反射角はこの法線との間の角度で表します。" },
+
+  // ── 教科書③光の屈折 ──────────────────────────────────────
+  { qtype:"ox", diff:"shogaku", title:"光の屈折①", color:"#f97316",
+    question:"コップの水にストローを入れると、ストローが折れて見えるのは光の屈折によるものである。",
+    correct:true,
+    explanation:"水と空気の境界で光が「屈折」するため、ストローが折れているように見えます。" },
+  { qtype:"select", diff:"shogaku", title:"光の屈折②", color:"#f97316",
+    question:"光が空気から水に進むとき、境界面で光はどうなりますか？",
+    options:["①まっすぐ進む","②曲がる（屈折する）","③すべて反射する"],
+    answer:1,
+    explanation:"光が異なる物質の境界を通るとき「屈折」が起きて向きが変わります。" },
+  { qtype:"input", diff:"shogaku", title:"全反射", color:"#f97316",
+    question:"入射角を大きくしていくと、やがて光がすべて反射して屈折しなくなります。\nこの現象を何といいますか？",
+    answers:["全反射","ぜんはんしゃ"],
+    unit:"",
+    explanation:"「全反射」といいます。光ファイバーはこの性質を利用しています。" },
+  { qtype:"select", diff:"shogaku", title:"光の分散", color:"#f97316",
+    question:"白色光を三角柱のガラス（プリズム）に通すと、光が色に分かれます。\n赤色とむらさき色では、どちらがより屈折しやすいですか？",
+    options:["①赤色","②むらさき色","③どちらも同じ"],
+    answer:1,
+    explanation:"むらさき色（波長が短い）のほうが屈折しやすく、赤色（波長が長い）は屈折しにくいです。虹もこの原理です。" },
+
+  // ── 教科書④ものに当たった光 ──────────────────────────────
+  { qtype:"select", diff:"shogaku", title:"反射しやすい板", color:"#f97316",
+    question:"光のリレーで的に光を当てるには、どの板が最もよいですか？",
+    options:["①鏡","②アルミはくをはった板","③透明なガラス板","④白いぬのをはった板"],
+    answer:0,
+    explanation:"鏡は光を一定の方向に強く反射します。アルミ箔は乱反射するため向きを調整しにくいです。" },
+  { qtype:"ox", diff:"shogaku", title:"乱反射", color:"#f97316",
+    question:"表面がでこぼこのものに光が当たると、光はいろいろな方向に反射する。",
+    correct:true,
+    explanation:"表面がでこぼこの場合、光が様々な方向に反射します。これを「乱反射」といいます。白い紙が全方向から見えるのはこのためです。" },
+
+  // ── 教科書⑤光の明るさとあたたかさ ──────────────────────
+  { qtype:"select", diff:"shogaku", title:"光の明るさ①", color:"#ea580c",
+    question:"鏡で光を重ねて当てると、明るさやあたたかさはどうなりますか？",
+    options:["①変わらない","②明るくなり、あたたかくなる","③暗くなる"],
+    answer:1,
+    explanation:"光を重ねるほど明るくなり、温度も高くなります。枚数が多いほどこの効果が大きくなります。" },
+  { qtype:"ox", diff:"shogaku", title:"光の明るさ②", color:"#ea580c",
+    question:"鏡の枚数を増やして光を重ねても、あたたかさは変わらない。",
+    correct:false,
+    explanation:"鏡の枚数が増えるほど光が重なり、明るくなるだけでなくあたたかさも増します。" },
+  { qtype:"select", diff:"shogaku", title:"光の重なりと温度", color:"#ea580c",
+    question:"2枚の鏡で光が重なっている部分と、1枚の鏡だけが当たっている部分を比べると、温度が高いのはどちらですか？",
+    options:["①1枚だけの部分","②2枚が重なっている部分","③温度は同じ"],
+    answer:1,
+    explanation:"光が重なる部分ほどエネルギーが集まり、温度が高くなります。" },
+
+  // ── 教科書⑥光と色による温度の違い ──────────────────────
+  { qtype:"select", diff:"shogaku", title:"色と光の吸収", color:"#ea580c",
+    question:"同じ量の水を日光に当てたとき、最も温度が高くなる水はどれですか？",
+    options:["①水道の水（透明）","②白色の絵の具を溶かした水","③黒色の絵の具を溶かした水"],
+    answer:2,
+    explanation:"黒色は光を最もよく吸収するため、温度が最も高くなります。白色は光を反射するため温度が上がりにくいです。" },
+  { qtype:"ox", diff:"shogaku", title:"黒色と光の吸収", color:"#ea580c",
+    question:"黒いものは光を吸収しやすく、あたたまりやすい。",
+    correct:true,
+    explanation:"黒色は光（熱）を吸収しやすいため、白色より速く温度が上がります。夏に黒い服が暑く感じるのもこのためです。" },
+  { qtype:"select", diff:"shogaku", title:"白色と光", color:"#ea580c",
+    question:"白色と黒色では、光をよく反射するのはどちらですか？",
+    options:["①白色","②黒色","③どちらも同じ"],
+    answer:0,
+    explanation:"白色は光をよく反射し、黒色は光をよく吸収します。白い服が夏に涼しいのはこのためです。" },
+
+  // ── 教科書⑦日光の利用 ────────────────────────────────────
+  { qtype:"select", diff:"shogaku", title:"日光の利用①", color:"#ea580c",
+    question:"次のうち、日光を直接利用していないものはどれですか？",
+    options:["①太陽熱温水器","②ビニルハウス","③熱気球"],
+    answer:2,
+    explanation:"熱気球はバーナーで空気を加熱して飛びます。太陽熱温水器・ビニルハウスは日光を直接利用します。" },
+  { qtype:"input", diff:"shogaku", title:"日光の利用②", color:"#ea580c",
+    question:"反射板（パラボラ型）を使って日光を1点に集め、料理をする器具を何といいますか？",
+    answers:["ソーラークッカー","太陽炉","たいようろ","そーらーくっかー"],
+    unit:"",
+    explanation:"「ソーラークッカー」といいます。太陽の光を1点に集めて高温にすることで料理ができます。" },
+  { qtype:"select", diff:"shogaku", title:"焦点の位置", color:"#ea580c",
+    question:"パラボラ型の反射板で日光を集めるとき、なべを置くと最も早くあたたまるのはどこですか？",
+    options:["①反射板の中心","②光が1点に集まる焦点の位置","③反射板のふち"],
+    answer:1,
+    explanation:"光が1点に集まる「焦点」に置くと、最も多くの光エネルギーが集まり速くあたたまります。" },
+
+  // ── 教科書⑧虫めがねを通った光 ──────────────────────────
+  { qtype:"select", diff:"shogaku", title:"虫めがねと光①", color:"#ea580c",
+    question:"虫めがねを紙に近づけると、光が集まった部分（明るい部分）の面積はどうなりますか？",
+    options:["①大きくなる","②小さくなる","③変わらない"],
+    answer:1,
+    explanation:"虫めがねを近づけるほど焦点に近づき、光が集まった部分の面積は小さくなります。" },
+  { qtype:"select", diff:"shogaku", title:"虫めがねと光②", color:"#ea580c",
+    question:"虫めがねを紙に近づけると、光が集まった部分の明るさはどうなりますか？",
+    options:["①明るくなる","②暗くなる","③変わらない"],
+    answer:0,
+    explanation:"面積が小さくなるほど同じ光量が集中するため、明るくなります。" },
+  { qtype:"input", diff:"shogaku", title:"焦点", color:"#ea580c",
+    question:"虫めがねで光が1点に集まる点を何といいますか？",
+    answers:["焦点","しょうてん"],
+    unit:"",
+    explanation:"光が1点に集まる点を「焦点」といいます。焦点ではエネルギーが集中し、紙が燃えることもあります。" },
+  { qtype:"input", diff:"shogaku", title:"焦点距離", color:"#ea580c",
+    question:"虫めがねの中心から焦点までの距離を何といいますか？",
+    answers:["焦点距離","しょうてんきょり"],
+    unit:"",
+    explanation:"「焦点距離」といいます。レンズが厚いほど焦点距離は短くなります。" },
+  { qtype:"select", diff:"shogaku", title:"厚いレンズと焦点距離", color:"#ea580c",
+    question:"虫めがねを厚いレンズに変えると、焦点距離はどうなりますか？",
+    options:["①長くなる","②短くなる","③変わらない"],
+    answer:1,
+    explanation:"レンズが厚いほど光を強く曲げるため、焦点距離は短くなります。" },
+
+  // ── 教科書⑨虫めがねで集めた光とあたたかさ ──────────────
+  { qtype:"ox", diff:"shogaku", title:"虫めがねと光量", color:"#ea580c",
+    question:"同じ大きさの虫めがねを使うと、虫めがねを通る日光の量はいつも同じである。",
+    correct:true,
+    explanation:"同じ大きさの虫めがねを使えば、虫めがねを通る光の量は常に同じです。焦点に合わせるかどうかで集まり方が変わるだけです。" },
+  { qtype:"select", diff:"shogaku", title:"ろうのとけ方", color:"#ea580c",
+    question:"虫めがねでろうをぬった紙に日光を当てます。ろうが最も早くとけ始めるのはどの状態ですか？",
+    options:["①虫めがねを紙から遠くはなしたとき","②虫めがねを焦点の位置に合わせたとき","③虫めがねを紙に近づけすぎたとき"],
+    answer:1,
+    explanation:"焦点に合わせると光が1点に集中し、最も温度が高くなるため、ろうが最も早くとけます。" },
+
+  // ── 教科書⑩虫めがねの大きさと集まる光 ───────────────────
+  { qtype:"select", diff:"shogaku", title:"虫めがねの大きさ①", color:"#ea580c",
+    question:"大きい虫めがねと小さい虫めがねで集まる光の量を比べます。どちらが多いですか？",
+    options:["①大きい虫めがね","②小さい虫めがね","③どちらも同じ"],
+    answer:0,
+    explanation:"虫めがねが大きいほどより多くの光を集めることができます。" },
+  { qtype:"ox", diff:"shogaku", title:"虫めがねの大きさ②", color:"#ea580c",
+    question:"虫めがねが大きいほど、集まる光の量は多くなる。",
+    correct:true,
+    explanation:"虫めがねの面積が大きいほど多くの光を集められます。天体望遠鏡のレンズが大きいのもこのためです。" },
+  { qtype:"select", diff:"shogaku", title:"紙の色と焦げ方", color:"#ea580c",
+    question:"同じ虫めがねで、白い紙と黒い紙に光を集めます。早く焦げるのはどちらですか？",
+    options:["①白い紙","②黒い紙","③どちらもほぼ同時"],
+    answer:1,
+    explanation:"黒い紙は光（熱）を吸収しやすいため、白い紙より早く焦げます。" },
+  { qtype:"select", diff:"shogaku", title:"実験の条件そろえ", color:"#ea580c",
+    question:"大きさが違う虫めがねで明るさを比べる実験をします。同じにする条件はどれですか？",
+    options:["①明るい部分の大きさ（面積）","②虫めがねと紙の距離"],
+    answer:0,
+    explanation:"比べる条件（明るさ）以外はそろえる必要があります。明るい部分の大きさ（面積）を同じにして比べます。" },
+];
+
 const PROBLEMS_NYUSHI = [
-// ○×
-{
-  qtype: "ox",
-  diff: "nyushi",
-  title: "光の屈折",
-  color: "#dc2626",
-  question: "光は空気より水中のほうが速く進む。",
-  correct: false,
-  explanation: "光の速さは空気中より水中や ガラス中のほうが遅くなります。速さが遅くなる物質ほど屈折角が小さくなります。"
-}, {
-  qtype: "ox",
-  diff: "nyushi",
-  title: "全反射",
-  color: "#dc2626",
-  question: "光が水中から空気に出るとき、入射角が大きくなりすぎると全反射が起きる。",
-  correct: true,
-  explanation: "光が密な媒質から疎な媒質へ進むとき、入射角が「臨界角」を超えると全反射が起きます。光ファイバーに利用されています。"
-}, {
-  qtype: "ox",
-  diff: "nyushi",
-  title: "凸レンズと倒立像",
-  color: "#dc2626",
-  question: "凸レンズで物体が焦点の外側にあるとき、スクリーンにできる像は上下左右が逆になる。",
-  correct: true,
-  explanation: "凸レンズで物体が焦点距離より外にあるとき、スクリーンには「実像（上下左右逆の倒立像）」ができます。"
-},
-// 選択問題（入試レベル）
-{
-  qtype: "select",
-  diff: "nyushi",
-  title: "凸レンズの焦点距離",
-  color: "#dc2626",
-  question: "物体を凸レンズの焦点上に置いたとき、スクリーンにできる像はどうなりますか？",
-  options: ["①非常に小さな像", "②非常に大きな像", "③像はできない", "④正立の像"],
-  answer: 2,
-  explanation: "焦点に物体を置くと、レンズを通った光は平行光線となり、スクリーンには像ができません。"
-}, {
-  qtype: "select",
-  diff: "nyushi",
-  title: "光の速さ",
-  color: "#dc2626",
-  question: "光が1秒間に進む距離として正しいものはどれですか？",
-  options: ["①約30万km", "②約3万km", "③約300km", "④約30km"],
-  answer: 0,
-  explanation: "光の速さは真空中で約30万km/s（秒速約30万キロメートル）です。"
-}, {
-  qtype: "select",
-  diff: "nyushi",
-  title: "分散",
-  color: "#dc2626",
-  question: "白色光（太陽光）をプリズムに通すと七色に分かれます。この現象を何といいますか？",
-  options: ["①反射", "②全反射", "③分散", "④干渉"],
-  answer: 2,
-  explanation: "白色光がプリズムを通ると波長の違いにより屈折角が異なり「分散」が起きます。虹も同じ原理です。"
-},
-// 計算問題
-{
-  qtype: "calc",
-  diff: "nyushi",
-  title: "光の反射計算",
-  color: "#dc2626",
-  question: "平面鏡に対して入射角が35°のとき、反射角は何度ですか？",
-  answer: 35,
-  unit: "度",
-  explanation: "反射の法則より「入射角＝反射角」です。入射角35°→反射角35°。"
-}, {
-  qtype: "calc",
-  diff: "nyushi",
-  title: "焦点距離の計算",
-  color: "#dc2626",
-  question: "物体を凸レンズの中心から30cm離して置いたら、\nレンズの反対側20cmのところに実像ができました。\n焦点距離は何cmですか？（1/f = 1/a + 1/bの式を使う）",
-  answer: 12,
-  unit: "cm",
-  explanation: "1/f = 1/30 + 1/20 = 2/60 + 3/60 = 5/60\nf = 12cm"
-},
-// 入力問題（入試レベル）
-{
-  qtype: "input",
-  diff: "nyushi",
-  title: "光の単元用語",
-  color: "#dc2626",
-  question: "凸レンズで物体が焦点より内側にあるとき\n虚像は正立・拡大で見えます。\nこのとき「虚像」はスクリーンに映りますか、映りませんか？（映る／映らない）",
-  answers: ["映らない", "うつらない"],
-  unit: "",
-  explanation: "虚像はスクリーンに映すことができません。虫めがねで物体を拡大して見るときが虚像の例です。"
-}, {
-  qtype: "input",
-  diff: "nyushi",
-  title: "光ファイバー",
-  color: "#dc2626",
-  question: "光が密な媒質から疎な媒質に入るとき、ある角度を超えると光が全て反射されます。この現象を何といいますか？（漢字）",
-  answers: ["全反射", "ぜんはんしゃ"],
-  unit: "",
-  explanation: "「全反射」は光ファイバーの原理として利用されています。インターネット回線などに応用されています。"
-},
-// 追加○×（入試）
-{
-  qtype: "ox",
-  diff: "nyushi",
-  title: "凸レンズ①",
-  color: "#dc2626",
-  question: "凸レンズは中央が薄く、端が厚い形をしている。",
-  correct: false,
-  explanation: "凸レンズは中央が厚く、端が薄い形です。光を集める性質があります。"
-}, {
-  qtype: "ox",
-  diff: "nyushi",
-  title: "凸レンズ②",
-  color: "#dc2626",
-  question: "焦点距離より内側に物体を置くと、スクリーンに実像ができる。",
-  correct: false,
-  explanation: "焦点距離より内側では実像はできず、レンズ越しに拡大された虚像が見えます。"
-}, {
-  qtype: "ox",
-  diff: "nyushi",
-  title: "光の速さ",
-  color: "#dc2626",
-  question: "光の速さは音の速さより速い。",
-  correct: true,
-  explanation: "光の速さは約30万km/s、音の速さは約340m/s。光は音の約90万倍速いです。"
-}, {
-  qtype: "ox",
-  diff: "nyushi",
-  title: "屈折と速さ",
-  color: "#dc2626",
-  question: "光が空気からガラスに入ると、光の速さは遅くなる。",
-  correct: true,
-  explanation: "光は密度の高い物質（ガラス・水）に入ると速さが遅くなります。この速さの違いが屈折の原因です。"
-}, {
-  qtype: "ox",
-  diff: "nyushi",
-  title: "虚像と実像",
-  color: "#dc2626",
-  question: "虚像はスクリーンに映すことができる。",
-  correct: false,
-  explanation: "虚像はスクリーンに映せません。実像はスクリーンに映すことができます。"
-}, {
-  qtype: "ox",
-  diff: "nyushi",
-  title: "凸レンズ③",
-  color: "#dc2626",
-  question: "物体を焦点距離の2倍の位置に置くと、同じ大きさの実像ができる。",
-  correct: true,
-  explanation: "物体を焦点距離の2倍（2F）に置くと、レンズの反対側の2Fに同じ大きさの倒立実像ができます。"
-},
-// 追加選択（入試）
-{
-  qtype: "select",
-  diff: "nyushi",
-  title: "実像の性質",
-  color: "#dc2626",
-  question: "凸レンズで物体が焦点の外側にあるとき、できる実像の向きはどうなっていますか？",
-  options: ["①物体と同じ向き（正立）", "②上下左右が逆（倒立）", "③左右だけ逆"],
-  answer: 1,
-  explanation: "焦点の外側に物体があるとき、スクリーンには「倒立実像」（上下左右が逆）ができます。"
-}, {
-  qtype: "select",
-  diff: "nyushi",
-  title: "物体を近づけると",
-  color: "#dc2626",
-  question: "凸レンズに物体を近づけていくと、実像の大きさはどうなりますか？",
-  options: ["①小さくなる", "②大きくなる", "③変わらない"],
-  answer: 1,
-  explanation: "物体をレンズに近づけるほど（焦点に近づくほど）、実像は大きくなり、スクリーンはレンズから遠ざけないと映らなくなります。"
-}, {
-  qtype: "select",
-  diff: "nyushi",
-  title: "光の屈折方向",
-  color: "#dc2626",
-  question: "光が空気から水に入るとき（斜めに入射）、光の進む方向はどうなりますか？",
-  options: ["①境界面から遠ざかる方向に曲がる", "②境界面に近づく方向に曲がる", "③曲がらず直進する"],
-  answer: 1,
-  explanation: "光が疎な媒質（空気）から密な媒質（水）に入るとき、境界面の法線に近づく方向（入射角＞屈折角）に曲がります。"
-}, {
-  qtype: "select",
-  diff: "nyushi",
-  title: "臨界角",
-  color: "#dc2626",
-  question: "全反射が起きる条件として正しいのはどれですか？",
-  options: ["①光が疎な媒質から密な媒質へ進むとき", "②光が密な媒質から疎な媒質へ進み、入射角が臨界角以上のとき", "③光が同じ媒質を進むとき"],
-  answer: 1,
-  explanation: "全反射は、密な媒質から疎な媒質へ光が進み、入射角が臨界角以上になったときに起きます。"
-}];
+  // ○×
+  { qtype:"ox", diff:"nyushi", title:"光の屈折", color:"#dc2626",
+    question:"光は空気より水中のほうが速く進む。",
+    correct:false,
+    explanation:"光の速さは空気中より水中や ガラス中のほうが遅くなります。速さが遅くなる物質ほど屈折角が小さくなります。" },
+  { qtype:"ox", diff:"nyushi", title:"全反射", color:"#dc2626",
+    question:"光が水中から空気に出るとき、入射角が大きくなりすぎると全反射が起きる。",
+    correct:true,
+    explanation:"光が密な媒質から疎な媒質へ進むとき、入射角が「臨界角」を超えると全反射が起きます。光ファイバーに利用されています。" },
+  { qtype:"ox", diff:"nyushi", title:"凸レンズと倒立像", color:"#dc2626",
+    question:"凸レンズで物体が焦点の外側にあるとき、スクリーンにできる像は上下左右が逆になる。",
+    correct:true,
+    explanation:"凸レンズで物体が焦点距離より外にあるとき、スクリーンには「実像（上下左右逆の倒立像）」ができます。" },
+
+  // 選択問題（入試レベル）
+  { qtype:"select", diff:"nyushi", title:"凸レンズの焦点距離", color:"#dc2626",
+    question:"物体を凸レンズの焦点上に置いたとき、スクリーンにできる像はどうなりますか？",
+    options:["①非常に小さな像","②非常に大きな像","③像はできない","④正立の像"],
+    answer:2,
+    explanation:"焦点に物体を置くと、レンズを通った光は平行光線となり、スクリーンには像ができません。" },
+  { qtype:"select", diff:"nyushi", title:"光の速さ", color:"#dc2626",
+    question:"光が1秒間に進む距離として正しいものはどれですか？",
+    options:["①約30万km","②約3万km","③約300km","④約30km"],
+    answer:0,
+    explanation:"光の速さは真空中で約30万km/s（秒速約30万キロメートル）です。" },
+  { qtype:"select", diff:"nyushi", title:"分散", color:"#dc2626",
+    question:"白色光（太陽光）をプリズムに通すと七色に分かれます。この現象を何といいますか？",
+    options:["①反射","②全反射","③分散","④干渉"],
+    answer:2,
+    explanation:"白色光がプリズムを通ると波長の違いにより屈折角が異なり「分散」が起きます。虹も同じ原理です。" },
+
+  // 計算問題
+  { qtype:"calc", diff:"nyushi", title:"光の反射計算", color:"#dc2626",
+    question:"平面鏡に対して入射角が35°のとき、反射角は何度ですか？",
+    answer:35, unit:"度",
+    explanation:"反射の法則より「入射角＝反射角」です。入射角35°→反射角35°。" },
+  { qtype:"calc", diff:"nyushi", title:"焦点距離の計算", color:"#dc2626",
+    question:"物体を凸レンズの中心から30cm離して置いたら、\nレンズの反対側20cmのところに実像ができました。\n焦点距離は何cmですか？（1/f = 1/a + 1/bの式を使う）",
+    answer:12, unit:"cm",
+    explanation:"1/f = 1/30 + 1/20 = 2/60 + 3/60 = 5/60\nf = 12cm" },
+
+  // 入力問題（入試レベル）
+  { qtype:"input", diff:"nyushi", title:"光の単元用語", color:"#dc2626",
+    question:"凸レンズで物体が焦点より内側にあるとき\n虚像は正立・拡大で見えます。\nこのとき「虚像」はスクリーンに映りますか、映りませんか？（映る／映らない）",
+    answers:["映らない","うつらない"],
+    unit:"",
+    explanation:"虚像はスクリーンに映すことができません。虫めがねで物体を拡大して見るときが虚像の例です。" },
+  { qtype:"input", diff:"nyushi", title:"光ファイバー", color:"#dc2626",
+    question:"光が密な媒質から疎な媒質に入るとき、ある角度を超えると光が全て反射されます。この現象を何といいますか？（漢字）",
+    answers:["全反射","ぜんはんしゃ"],
+    unit:"",
+    explanation:"「全反射」は光ファイバーの原理として利用されています。インターネット回線などに応用されています。" },
+
+  // 追加○×（入試）
+  { qtype:"ox", diff:"nyushi", title:"凸レンズ①", color:"#dc2626",
+    question:"凸レンズは中央が薄く、端が厚い形をしている。",
+    correct:false,
+    explanation:"凸レンズは中央が厚く、端が薄い形です。光を集める性質があります。" },
+  { qtype:"ox", diff:"nyushi", title:"凸レンズ②", color:"#dc2626",
+    question:"焦点距離より内側に物体を置くと、スクリーンに実像ができる。",
+    correct:false,
+    explanation:"焦点距離より内側では実像はできず、レンズ越しに拡大された虚像が見えます。" },
+  { qtype:"ox", diff:"nyushi", title:"光の速さ", color:"#dc2626",
+    question:"光の速さは音の速さより速い。",
+    correct:true,
+    explanation:"光の速さは約30万km/s、音の速さは約340m/s。光は音の約90万倍速いです。" },
+  { qtype:"ox", diff:"nyushi", title:"屈折と速さ", color:"#dc2626",
+    question:"光が空気からガラスに入ると、光の速さは遅くなる。",
+    correct:true,
+    explanation:"光は密度の高い物質（ガラス・水）に入ると速さが遅くなります。この速さの違いが屈折の原因です。" },
+  { qtype:"ox", diff:"nyushi", title:"虚像と実像", color:"#dc2626",
+    question:"虚像はスクリーンに映すことができる。",
+    correct:false,
+    explanation:"虚像はスクリーンに映せません。実像はスクリーンに映すことができます。" },
+  { qtype:"ox", diff:"nyushi", title:"凸レンズ③", color:"#dc2626",
+    question:"物体を焦点距離の2倍の位置に置くと、同じ大きさの実像ができる。",
+    correct:true,
+    explanation:"物体を焦点距離の2倍（2F）に置くと、レンズの反対側の2Fに同じ大きさの倒立実像ができます。" },
+
+  // 追加選択（入試）
+  { qtype:"select", diff:"nyushi", title:"実像の性質", color:"#dc2626",
+    question:"凸レンズで物体が焦点の外側にあるとき、できる実像の向きはどうなっていますか？",
+    options:["①物体と同じ向き（正立）","②上下左右が逆（倒立）","③左右だけ逆"],
+    answer:1,
+    explanation:"焦点の外側に物体があるとき、スクリーンには「倒立実像」（上下左右が逆）ができます。" },
+  { qtype:"select", diff:"nyushi", title:"物体を近づけると", color:"#dc2626",
+    question:"凸レンズに物体を近づけていくと、実像の大きさはどうなりますか？",
+    options:["①小さくなる","②大きくなる","③変わらない"],
+    answer:1,
+    explanation:"物体をレンズに近づけるほど（焦点に近づくほど）、実像は大きくなり、スクリーンはレンズから遠ざけないと映らなくなります。" },
+  { qtype:"select", diff:"nyushi", title:"光の屈折方向", color:"#dc2626",
+    question:"光が空気から水に入るとき（斜めに入射）、光の進む方向はどうなりますか？",
+    options:["①境界面から遠ざかる方向に曲がる","②境界面に近づく方向に曲がる","③曲がらず直進する"],
+    answer:1,
+    explanation:"光が疎な媒質（空気）から密な媒質（水）に入るとき、境界面の法線に近づく方向（入射角＞屈折角）に曲がります。" },
+  { qtype:"select", diff:"nyushi", title:"臨界角", color:"#dc2626",
+    question:"全反射が起きる条件として正しいのはどれですか？",
+    options:["①光が疎な媒質から密な媒質へ進むとき","②光が密な媒質から疎な媒質へ進み、入射角が臨界角以上のとき","③光が同じ媒質を進むとき"],
+    answer:1,
+    explanation:"全反射は、密な媒質から疎な媒質へ光が進み、入射角が臨界角以上になったときに起きます。" },
+];
 
 // ─── 動的計算問題ジェネレーター ────────────────────────────
 function genCalcProblems() {
@@ -1042,96 +457,54 @@ function genCalcProblems() {
   for (let i = 0; i < 5; i++) {
     const angle = randInt(10, 80);
     problems.push({
-      qtype: "calc",
-      diff: "nyushi",
-      title: "反射角の計算",
-      color: "#dc2626",
-      question: `鏡に光を当てたとき、入射角が ${angle}° でした。\n反射角は何度ですか？`,
-      answer: angle,
-      unit: "度",
-      explanation: `反射の法則「入射角＝反射角」より、反射角も ${angle}° です。`
+      qtype:"calc", diff:"nyushi", title:"反射角の計算", color:"#dc2626",
+      question:`鏡に光を当てたとき、入射角が ${angle}° でした。\n反射角は何度ですか？`,
+      answer: angle, unit:"度",
+      explanation:`反射の法則「入射角＝反射角」より、反射角も ${angle}° です。`
     });
   }
 
   // ② 鏡の角度から反射後の光の向き（入射角→鏡面との角度）
   for (let i = 0; i < 3; i++) {
     const mirrorAngle = randInt(20, 70); // 鏡面との角度
-    const incidence = 90 - mirrorAngle; // 法線との角度（入射角）
+    const incidence = 90 - mirrorAngle;  // 法線との角度（入射角）
     problems.push({
-      qtype: "calc",
-      diff: "nyushi",
-      title: "鏡面角度と入射角",
-      color: "#dc2626",
-      question: `光が鏡の面に対して ${mirrorAngle}° の角度で当たりました。\n入射角（法線との角度）は何度ですか？`,
-      answer: incidence,
-      unit: "度",
-      explanation: `鏡の面との角度が ${mirrorAngle}° のとき、法線（鏡に垂直な線）との角度は\n90 − ${mirrorAngle} = ${incidence}° です。これが入射角です。`
+      qtype:"calc", diff:"nyushi", title:"鏡面角度と入射角", color:"#dc2626",
+      question:`光が鏡の面に対して ${mirrorAngle}° の角度で当たりました。\n入射角（法線との角度）は何度ですか？`,
+      answer: incidence, unit:"度",
+      explanation:`鏡の面との角度が ${mirrorAngle}° のとき、法線（鏡に垂直な線）との角度は\n90 − ${mirrorAngle} = ${incidence}° です。これが入射角です。`
     });
   }
 
   // ③ 凸レンズの公式（1/f = 1/a + 1/b）×6パターン
   // 割り切れる組み合わせを生成
-  const lensCombos = [{
-    a: 30,
-    b: 20
-  }, {
-    a: 40,
-    b: 40
-  }, {
-    a: 60,
-    b: 30
-  }, {
-    a: 20,
-    b: 30
-  }, {
-    a: 60,
-    b: 20
-  }, {
-    a: 40,
-    b: 24
-  }, {
-    a: 30,
-    b: 30
-  }, {
-    a: 24,
-    b: 40
-  }];
-  lensCombos.forEach(({
-    a,
-    b
-  }) => {
+  const lensCombos = [
+    {a:30, b:20}, {a:40, b:40}, {a:60, b:30}, {a:20, b:30},
+    {a:60, b:20}, {a:40, b:24}, {a:30, b:30}, {a:24, b:40},
+  ];
+  lensCombos.forEach(({a, b}) => {
     // 1/f = 1/a + 1/b → f = ab/(a+b)
-    const f_num = a * b,
-      f_den = a + b;
+    const f_num = a * b, f_den = a + b;
     const f = f_num / f_den;
     if (!Number.isInteger(f)) return;
     const whichUnknown = Math.random() < 0.33 ? "f" : Math.random() < 0.5 ? "b" : "a";
     if (whichUnknown === "f") {
       problems.push({
-        qtype: "calc",
-        diff: "nyushi",
-        title: "焦点距離の計算",
-        color: "#dc2626",
-        question: `物体をレンズの中心から ${a}cm 離して置いたら、\nレンズの反対側 ${b}cm のところに実像ができました。\n焦点距離は何cmですか？\n（1/f = 1/a + 1/b を使う）`,
-        answer: f,
-        unit: "cm",
-        explanation: `1/f = 1/${a} + 1/${b} = ${b}/${f_num} + ${a}/${f_num} = ${a + b}/${f_num}\nf = ${f_num}/${a + b} = ${f}cm`
+        qtype:"calc", diff:"nyushi", title:"焦点距離の計算", color:"#dc2626",
+        question:`物体をレンズの中心から ${a}cm 離して置いたら、\nレンズの反対側 ${b}cm のところに実像ができました。\n焦点距離は何cmですか？\n（1/f = 1/a + 1/b を使う）`,
+        answer: f, unit:"cm",
+        explanation:`1/f = 1/${a} + 1/${b} = ${b}/${f_num} + ${a}/${f_num} = ${a+b}/${f_num}\nf = ${f_num}/${a+b} = ${f}cm`
       });
     } else if (whichUnknown === "b") {
       // 1/b = 1/f - 1/a → b = af/(a-f)
-      const b2_num = a * f,
-        b2_den = a - f;
+      const b2_num = a * f, b2_den = a - f;
       if (b2_den <= 0 || !Number.isInteger(b2_num / b2_den)) return;
       const b2 = b2_num / b2_den;
       problems.push({
-        qtype: "calc",
-        diff: "nyushi",
-        title: "像の位置の計算",
-        color: "#dc2626",
-        question: `焦点距離 ${f}cm の凸レンズの中心から\n物体を ${a}cm 離して置きました。\n実像はレンズの反対側何cmにできますか？\n（1/f = 1/a + 1/b を使う）`,
-        answer: b2,
-        unit: "cm",
-        explanation: `1/${b2} = 1/${f} - 1/${a} = ${a}/${f * a} - ${f}/${f * a} = ${a - f}/${f * a}\nb = ${f * a}/${a - f} = ${b2}cm`
+        qtype:"calc", diff:"nyushi", title:"像の位置の計算", color:"#dc2626",
+        question:`焦点距離 ${f}cm の凸レンズの中心から\n物体を ${a}cm 離して置きました。\n実像はレンズの反対側何cmにできますか？\n（1/f = 1/a + 1/b を使う）`,
+        answer: b2, unit:"cm",
+        explanation:`1/${b2} = 1/${f} - 1/${a} = ${a}/${f*a} - ${f}/${f*a} = ${a-f}/${f*a}\nb = ${f*a}/${a-f} = ${b2}cm`
       });
     }
   });
@@ -1140,14 +513,10 @@ function genCalcProblems() {
   const lightTimes = [1, 2, 3, 5, 8, 10];
   lightTimes.forEach(t => {
     problems.push({
-      qtype: "calc",
-      diff: "nyushi",
-      title: "光の速さ計算",
-      color: "#dc2626",
-      question: `光の速さを秒速30万kmとします。\n光が ${t} 秒間に進む距離は何万kmですか？`,
-      answer: 30 * t,
-      unit: "万km",
-      explanation: `距離 = 速さ × 時間 = 30万km × ${t} = ${30 * t}万km`
+      qtype:"calc", diff:"nyushi", title:"光の速さ計算", color:"#dc2626",
+      question:`光の速さを秒速30万kmとします。\n光が ${t} 秒間に進む距離は何万kmですか？`,
+      answer: 30 * t, unit:"万km",
+      explanation:`距離 = 速さ × 時間 = 30万km × ${t} = ${30*t}万km`
     });
   });
 
@@ -1156,28 +525,27 @@ function genCalcProblems() {
   const angles1 = [30, 40, 45, 50, 60];
   angles1.forEach(inc => {
     // 簡易近似：sinθ2 = sinθ1 / 1.33
-    const ref = Math.round(Math.asin(Math.sin(inc * Math.PI / 180) / 1.33) * 180 / Math.PI);
+    const ref = Math.round(Math.asin(Math.sin(inc * Math.PI/180) / 1.33) * 180/Math.PI);
     if (ref > 0 && ref < inc) {
       problems.push({
-        qtype: "calc",
-        diff: "nyushi",
-        title: "屈折角の計算",
-        color: "#dc2626",
-        question: `光が空気から水に入るとき、入射角が ${inc}° でした。\n屈折角は約何度ですか？\n（空気の屈折率1.0、水の屈折率1.33として計算）`,
-        answer: ref,
-        unit: "度",
-        explanation: `スネルの法則：sin${inc}° / sin屈折角 = 1.33\nsin屈折角 = sin${inc}° ÷ 1.33 ≈ ${ref}°\n（光が密な媒質に入るため、入射角 ${inc}° > 屈折角 ${ref}°）`
+        qtype:"calc", diff:"nyushi", title:"屈折角の計算", color:"#dc2626",
+        question:`光が空気から水に入るとき、入射角が ${inc}° でした。\n屈折角は約何度ですか？\n（空気の屈折率1.0、水の屈折率1.33として計算）`,
+        answer: ref, unit:"度",
+        explanation:`スネルの法則：sin${inc}° / sin屈折角 = 1.33\nsin屈折角 = sin${inc}° ÷ 1.33 ≈ ${ref}°\n（光が密な媒質に入るため、入射角 ${inc}° > 屈折角 ${ref}°）`
       });
     }
   });
+
   return problems;
 }
+
 function getProblems(diff) {
   const calcProbs = genCalcProblems();
   if (diff === "shogaku") return [...PROBLEMS_SHOGAKU];
-  if (diff === "nyushi") return [...PROBLEMS_NYUSHI, ...calcProbs];
+  if (diff === "nyushi")  return [...PROBLEMS_NYUSHI, ...calcProbs];
   return [...PROBLEMS_SHOGAKU, ...PROBLEMS_NYUSHI, ...calcProbs];
 }
+
 function pickProblems(diff, total) {
   const pool = getProblems(diff);
   const result = [];
@@ -1187,9 +555,7 @@ function pickProblems(diff, total) {
     const idx = randInt(0, pool.length - 1);
     if (!used.has(idx) || pool.length < total) {
       used.add(idx);
-      result.push({
-        ...pool[idx]
-      });
+      result.push({...pool[idx]});
     }
   }
   return result;
@@ -1197,560 +563,348 @@ function pickProblems(diff, total) {
 
 // ─── 問題UIコンポーネント ──────────────────────────────────
 
-function OXAnswer({
-  problem,
-  checked,
-  userAnswer,
-  onAnswer
-}) {
+function OXAnswer({ problem, checked, userAnswer, onAnswer }) {
   const isCorrect = userAnswer === problem.correct;
-  return /*#__PURE__*/React.createElement("div", {
-    className: "ox-row"
-  }, [true, false].map(val => {
-    let cls = val ? "ox-btn maru" : "ox-btn batsu";
-    if (checked) {
-      if (val === problem.correct) cls += " selected-correct";else if (userAnswer === val) cls += " selected-wrong";
-    }
-    return /*#__PURE__*/React.createElement("button", {
-      key: String(val),
-      className: cls,
-      onClick: () => !checked && onAnswer(val),
-      disabled: checked
-    }, val ? "○" : "×");
-  }));
+  return (
+    <div className="ox-row">
+      {[true, false].map(val => {
+        let cls = val ? "ox-btn maru" : "ox-btn batsu";
+        if (checked) {
+          if (val === problem.correct) cls += " selected-correct";
+          else if (userAnswer === val) cls += " selected-wrong";
+        }
+        return (
+          <button key={String(val)} className={cls}
+            onClick={() => !checked && onAnswer(val)}
+            disabled={checked}>
+            {val ? "○" : "×"}
+          </button>
+        );
+      })}
+    </div>
+  );
 }
-function SelectAnswer({
-  problem,
-  checked,
-  userAnswer,
-  onAnswer
-}) {
-  return /*#__PURE__*/React.createElement("div", {
-    className: "select-grid"
-  }, problem.options.map((opt, i) => {
-    let cls = "select-btn";
-    if (checked) {
-      if (i === problem.answer) cls += " show-correct";else if (userAnswer === i) cls += " wrong";
-      cls += " disabled";
-    }
-    return /*#__PURE__*/React.createElement("button", {
-      key: i,
-      className: cls,
-      onClick: () => !checked && onAnswer(i),
-      disabled: checked
-    }, opt);
-  }));
+
+function SelectAnswer({ problem, checked, userAnswer, onAnswer }) {
+  return (
+    <div className="select-grid">
+      {problem.options.map((opt, i) => {
+        let cls = "select-btn";
+        if (checked) {
+          if (i === problem.answer) cls += " show-correct";
+          else if (userAnswer === i) cls += " wrong";
+          cls += " disabled";
+        }
+        return (
+          <button key={i} className={cls}
+            onClick={() => !checked && onAnswer(i)}
+            disabled={checked}>
+            {opt}
+          </button>
+        );
+      })}
+    </div>
+  );
 }
-function InputAnswer({
-  problem,
-  checked,
-  userAnswer,
-  onAnswer,
-  inputVal,
-  setInputVal
-}) {
+
+function InputAnswer({ problem, checked, userAnswer, onAnswer, inputVal, setInputVal }) {
   const inputRef = useRef(null);
   const isCorrect = checked ? judgeInput(userAnswer || "", problem.answers) : null;
   let cls = "input-area";
   if (checked) cls += isCorrect ? " correct" : " wrong";
-  return /*#__PURE__*/React.createElement("div", {
-    className: cls,
-    onClick: () => inputRef.current && inputRef.current.focus()
-  }, /*#__PURE__*/React.createElement("div", {
-    className: "input-label"
-  }, "\uD83D\uDCDD \u7B54\u3048\u3092\u5165\u529B"), /*#__PURE__*/React.createElement("input", {
-    ref: inputRef,
-    className: "input-field",
-    type: "text",
-    placeholder: "\u3053\u3053\u306B\u5165\u529B\u2026",
-    value: inputVal,
-    onChange: e => !checked && setInputVal(e.target.value),
-    onKeyDown: e => {
-      if (e.key === "Enter" && !checked && inputVal) onAnswer(inputVal);
-    },
-    disabled: checked,
-    autoComplete: "off"
-  }), !checked && inputVal && /*#__PURE__*/React.createElement("button", {
-    style: {
-      alignSelf: "flex-end",
-      background: "linear-gradient(135deg,#fb923c,#f97316)",
-      color: "#fff",
-      border: "none",
-      borderRadius: "10px",
-      padding: "8px 20px",
-      fontWeight: "900",
-      fontSize: "14px",
-      cursor: "pointer"
-    },
-    onClick: () => onAnswer(inputVal)
-  }, "\u6C7A\u5B9A \u2714"), checked && !isCorrect && /*#__PURE__*/React.createElement("div", {
-    className: "correct-ans-hint"
-  }, "\u2705 \u6B63\u89E3\uFF1A", problem.answers[0]));
+
+  return (
+    <div className={cls} onClick={() => inputRef.current && inputRef.current.focus()}>
+      <div className="input-label">📝 答えを入力</div>
+      <input
+        ref={inputRef}
+        className="input-field"
+        type="text"
+        placeholder="ここに入力…"
+        value={inputVal}
+        onChange={e => !checked && setInputVal(e.target.value)}
+        onKeyDown={e => { if (e.key === "Enter" && !checked && inputVal) onAnswer(inputVal); }}
+        disabled={checked}
+        autoComplete="off"
+      />
+      {!checked && inputVal && (
+        <button style={{alignSelf:"flex-end",background:"linear-gradient(135deg,#fb923c,#f97316)",color:"#fff",border:"none",borderRadius:"10px",padding:"8px 20px",fontWeight:"900",fontSize:"14px",cursor:"pointer"}}
+          onClick={() => onAnswer(inputVal)}>
+          決定 ✔
+        </button>
+      )}
+      {checked && !isCorrect && (
+        <div className="correct-ans-hint">✅ 正解：{problem.answers[0]}</div>
+      )}
+    </div>
+  );
 }
-function CalcAnswer({
-  problem,
-  checked,
-  userAnswer,
-  onAnswer
-}) {
+
+function CalcAnswer({ problem, checked, userAnswer, onAnswer }) {
   const [val, setVal] = useState("");
   const isCorrect = checked ? Math.abs(parseFloat(val) - problem.answer) < 0.01 : null;
-  const pressKey = k => {
-    if (k === "BACK") {
-      setVal(v => v.slice(0, -1));
-      return;
-    }
-    if (k === "CLEAR") {
-      setVal("");
-      return;
-    }
+
+  const pressKey = (k) => {
+    if (k === "BACK")  { setVal(v => v.slice(0,-1)); return; }
+    if (k === "CLEAR") { setVal(""); return; }
     if (k === "." && val.includes(".")) return;
     if (val.length >= 8) return;
     setVal(v => v + k);
   };
-  return /*#__PURE__*/React.createElement(React.Fragment, null, /*#__PURE__*/React.createElement("div", {
-    className: `input-area${checked ? isCorrect ? " correct" : " wrong" : ""}`
-  }, /*#__PURE__*/React.createElement("div", {
-    className: "input-label"
-  }, "\uD83D\uDD22 \u8A08\u7B97\u3057\u3066\u7B54\u3048\u3092\u5165\u529B"), /*#__PURE__*/React.createElement("div", {
-    style: {
-      fontSize: "24px",
-      fontWeight: "900",
-      color: "#1f2937",
-      minHeight: "32px"
-    }
-  }, val || /*#__PURE__*/React.createElement("span", {
-    style: {
-      color: "#d1d5db",
-      fontWeight: "normal",
-      fontSize: "16px"
-    }
-  }, "?"), !checked && /*#__PURE__*/React.createElement("span", {
-    style: {
-      display: "inline-block",
-      animation: "blink 1s step-end infinite",
-      color: "#f97316"
-    }
-  }, "|"), val && /*#__PURE__*/React.createElement("span", {
-    style: {
-      fontSize: "14px",
-      color: "#6b7280",
-      marginLeft: "4px"
-    }
-  }, problem.unit)), checked && !isCorrect && /*#__PURE__*/React.createElement("div", {
-    className: "correct-ans-hint"
-  }, "\u2705 \u6B63\u89E3\uFF1A", problem.answer, problem.unit)), !checked && /*#__PURE__*/React.createElement("div", {
-    className: "calc-keypad"
-  }, CALC_KEYPAD.map((row, ri) => /*#__PURE__*/React.createElement("div", {
-    key: ri,
-    className: "key-row"
-  }, row.map(key => /*#__PURE__*/React.createElement("button", {
-    key: key.val,
-    className: "key-btn",
-    style: {
-      background: key.val === "BACK" || key.val === "CLEAR" ? "#ff8787" : key.val === "×" || key.val === "÷" ? "#74c0fc" : "#fff",
-      color: key.val === "BACK" || key.val === "CLEAR" ? "#fff" : "#1f2937",
-      boxShadow: "0 3px 0 rgba(0,0,0,0.15)"
-    },
-    onClick: () => pressKey(key.val)
-  }, key.label)))), /*#__PURE__*/React.createElement("button", {
-    style: {
-      width: "100%",
-      padding: "12px",
-      background: "linear-gradient(135deg,#fb923c,#f97316)",
-      color: "#fff",
-      border: "none",
-      borderRadius: "12px",
-      fontSize: "15px",
-      fontWeight: "900",
-      cursor: "pointer",
-      boxShadow: "0 3px 0 #c2410c"
-    },
-    onClick: () => val && onAnswer(val)
-  }, "\u7B54\u3048\u5408\u308F\u305B \u2714")));
+
+  return (
+    <>
+      <div className={`input-area${checked ? (isCorrect ? " correct" : " wrong") : ""}`}>
+        <div className="input-label">🔢 計算して答えを入力</div>
+        <div style={{fontSize:"24px",fontWeight:"900",color:"#1f2937",minHeight:"32px"}}>
+          {val || <span style={{color:"#d1d5db",fontWeight:"normal",fontSize:"16px"}}>?</span>}
+          {!checked && <span style={{display:"inline-block",animation:"blink 1s step-end infinite",color:"#f97316"}}>|</span>}
+          {val && <span style={{fontSize:"14px",color:"#6b7280",marginLeft:"4px"}}>{problem.unit}</span>}
+        </div>
+        {checked && !isCorrect && (
+          <div className="correct-ans-hint">✅ 正解：{problem.answer}{problem.unit}</div>
+        )}
+      </div>
+      {!checked && (
+        <div className="calc-keypad">
+          {CALC_KEYPAD.map((row, ri) => (
+            <div key={ri} className="key-row">
+              {row.map(key => (
+                <button key={key.val} className="key-btn"
+                  style={{background: key.val==="BACK"||key.val==="CLEAR" ? "#ff8787" : key.val==="×"||key.val==="÷" ? "#74c0fc" : "#fff",
+                          color: key.val==="BACK"||key.val==="CLEAR" ? "#fff" : "#1f2937",
+                          boxShadow:"0 3px 0 rgba(0,0,0,0.15)"}}
+                  onClick={() => pressKey(key.val)}>{key.label}</button>
+              ))}
+            </div>
+          ))}
+          <button style={{width:"100%",padding:"12px",background:"linear-gradient(135deg,#fb923c,#f97316)",color:"#fff",border:"none",borderRadius:"12px",fontSize:"15px",fontWeight:"900",cursor:"pointer",boxShadow:"0 3px 0 #c2410c"}}
+            onClick={() => val && onAnswer(val)}>
+            答え合わせ ✔
+          </button>
+        </div>
+      )}
+    </>
+  );
 }
 
 // ─── メインアプリ ──────────────────────────────────────────
 function App() {
-  const [mode, setMode] = useState("setup");
-  const [diff, setDiff] = useState("mix");
-  const [totalQ, setTotalQ] = useState(10);
+  const [mode, setMode]         = useState("setup");
+  const [diff, setDiff]         = useState("mix");
+  const [totalQ, setTotalQ]     = useState(10);
   const [problems, setProblems] = useState([]);
-  const [current, setCurrent] = useState(0);
-  const [score, setScore] = useState(0);
-  const [streak, setStreak] = useState(0);
-  const [best, setBest] = useState(0);
-  const [checked, setChecked] = useState(false);
+  const [current, setCurrent]   = useState(0);
+  const [score, setScore]       = useState(0);
+  const [streak, setStreak]     = useState(0);
+  const [best, setBest]         = useState(0);
+  const [checked, setChecked]   = useState(false);
   const [userAnswer, setUserAnswer] = useState(null);
   const [inputVal, setInputVal] = useState("");
-  const [celeb, setCeleb] = useState(false);
+  const [celeb, setCeleb]       = useState(false);
   const [isCorrect, setIsCorrect] = useState(false);
+
   useEffect(() => {
-    try {
-      const s = localStorage.getItem(STORAGE_KEY);
-      if (s) setBest(parseInt(s) || 0);
-    } catch (_) {}
-    setReviewBank(rvGetAll(QUIZ_KEY));
+    try { const s = localStorage.getItem(STORAGE_KEY); if (s) setBest(parseInt(s)||0); } catch(_) {}
   }, []);
-  const saveBest = v => {
-    try {
-      localStorage.setItem(STORAGE_KEY, String(v));
-    } catch (_) {}
-  };
-  const startReview = () => {
-    const bank = rvGetAll(QUIZ_KEY);
-    setReviewBank(bank);
-    if(bank.length === 0){ setMode("setup"); return; }
-    setProblems(rvGetProblems(QUIZ_KEY));
-    setCurrent(0); setScore(0); setStreak(0);
-    setChecked(false); setUserAnswer(null); setInputVal(""); setCeleb(false);
-    setMode("review");
-  };
+  const saveBest = v => { try { localStorage.setItem(STORAGE_KEY, String(v)); } catch(_) {} };
+
   const startQuiz = () => {
     setProblems(pickProblems(diff, totalQ));
-    setCurrent(0);
-    setScore(0);
-    setStreak(0);
-    setChecked(false);
-    setUserAnswer(null);
-    setInputVal("");
-    setCeleb(false);
+    setCurrent(0); setScore(0); setStreak(0);
+    setChecked(false); setUserAnswer(null); setInputVal(""); setCeleb(false);
     setMode("quiz");
   };
+
   const problem = problems[current] || null;
-  const handleAnswer = ans => {
+
+  const handleAnswer = (ans) => {
     if (checked) return;
     setUserAnswer(ans);
     setChecked(true);
+
     let correct = false;
     const p = problem;
-    if (p.qtype === "ox") correct = ans === p.correct;else if (p.qtype === "select") correct = ans === p.answer;else if (p.qtype === "input") correct = judgeInput(ans, p.answers);else if (p.qtype === "calc") correct = Math.abs(parseFloat(ans) - p.answer) < 0.01;
+    if (p.qtype === "ox")     correct = (ans === p.correct);
+    else if (p.qtype === "select") correct = (ans === p.answer);
+    else if (p.qtype === "input")  correct = judgeInput(ans, p.answers);
+    else if (p.qtype === "calc")   correct = Math.abs(parseFloat(ans) - p.answer) < 0.01;
+
     setIsCorrect(correct);
     if (correct) {
-      setScore(s => s + 1);
-      const ns = streak + 1;
-      setStreak(ns);
-      if (ns > best) {
-        setBest(ns);
-        saveBest(ns);
-      }
-      setCeleb(true);
-      setTimeout(() => setCeleb(false), 1800);
-      rvCorrect(QUIZ_KEY, problem);
-      setReviewBank(rvGetAll(QUIZ_KEY));
+      setScore(s => s+1);
+      const ns = streak + 1; setStreak(ns);
+      if (ns > best) { setBest(ns); saveBest(ns); }
+      setCeleb(true); setTimeout(() => setCeleb(false), 1800);
     } else {
       setStreak(0);
-      rvAdd(QUIZ_KEY, problem);
-      setReviewBank(rvGetAll(QUIZ_KEY));
     }
   };
+
   const nextQuestion = () => {
-    const _e=current+1>=problems.length;
-    if(_e&&mode==="review"){const b=rvGetAll(QUIZ_KEY);setReviewBank(b);if(b.length>0){startReview();}else{setMode("graduated");}return;}
-    if(_e){setMode("result");return;}
-    setCurrent(c => c + 1);
-    setChecked(false);
-    setUserAnswer(null);
-    setInputVal("");
-    setCeleb(false);
+    if (current + 1 >= totalQ) { setMode("result"); return; }
+    setCurrent(c => c+1);
+    setChecked(false); setUserAnswer(null); setInputVal(""); setCeleb(false);
   };
-  const progress = problem ? current / Math.max(problems.length,1) * 100 : 0;
+
+  const progress = problem ? (current / totalQ) * 100 : 0;
   const BTN = "linear-gradient(135deg,#fb923c,#f97316)";
 
   // ── セットアップ ──
-  if (mode === "setup") return /*#__PURE__*/React.createElement("div", {
-    className: "setup-wrap",
-    style: {
-      background: "#fff7ed"
-    }
-  }, /*#__PURE__*/React.createElement("div", {
-    className: "setup-card"
-  }, /*#__PURE__*/React.createElement("div", {
-    className: "setup-emoji"
-  }, "\uD83D\uDCA1"), /*#__PURE__*/React.createElement("h1", {
-    className: "setup-title",
-    style: {
-      color: "#9a3412"
-    }
-  }, "\u5149\u306E\u6027\u8CEA \u7406\u79D1\u30AF\u30A4\u30BA"), /*#__PURE__*/React.createElement("p", {
-    className: "setup-sub"
-  }, "\u5C0F\u5B66\u751F\u301C\u4E2D\u5B66\u5165\u8A66\u30EC\u30D9\u30EB"), React.createElement("div",{style:{marginBottom:"16px"}},React.createElement("button",{onClick:()=>{if(reviewBank.length>0)startReview();},style:{width:"100%",padding:"14px 16px",borderRadius:"14px",cursor:reviewBank.length>0?"pointer":"default",border:reviewBank.length>0?"2px solid #ef4444":"2px solid #e5e7eb",background:reviewBank.length>0?"#fef2f2":"#f9fafb",display:"flex",alignItems:"center",justifyContent:"space-between",fontFamily:"inherit",opacity:reviewBank.length===0?0.45:1}},React.createElement("div",{style:{textAlign:"left"}},React.createElement("div",{style:{fontWeight:"900",fontSize:"15px",color:reviewBank.length>0?"#b91c1c":"#374151"}},"📚 復習モード"),reviewBank.length>0&&React.createElement("div",{style:{fontSize:"11px",color:"#ef4444",marginTop:"2px"}},"タップして今すぐ開始！")),React.createElement("span",{style:{background:reviewBank.length>0?"#ef4444":"#d1d5db",color:"#fff",borderRadius:"99px",padding:"4px 12px",fontSize:"13px",fontWeight:"bold"}},reviewBank.length>0?`${reviewBank.length}問`:"なし")),reviewBank.length===0&&React.createElement("div",{style:{fontSize:"11px",color:"#9ca3af",textAlign:"center",marginTop:"4px"}},"間違えた問題が溜まるとここで復習できます")),
-  best > 0 && /*#__PURE__*/React.createElement("div", {
-    className: "best-badge",
-    style: {
-      background: "#ffedd5",
-      border: "1.5px solid #fb923c",
-      color: "#9a3412"
-    }
-  }, "\uD83C\uDFC6 \u6700\u9AD8\u9023\u7D9A\u8A18\u9332\uFF1A", /*#__PURE__*/React.createElement("strong", null, best, "\u554F")), /*#__PURE__*/React.createElement("div", {
-    className: "qcount-section"
-  }, "\u30EC\u30D9\u30EB\u3092\u9078\u3076"), /*#__PURE__*/React.createElement("div", {
-    className: "diff-btn-row"
-  }, [{
-    key: "shogaku",
-    emoji: "🌱",
-    name: "小学生レベル",
-    desc: "光の直進・反射・虫めがねの基本"
-  }, {
-    key: "nyushi",
-    emoji: "🔥",
-    name: "中学入試レベル",
-    desc: "屈折・凸レンズ・全反射・計算問題"
-  }, {
-    key: "mix",
-    emoji: "⭐",
-    name: "ミックス",
-    desc: "全問題からランダムに出題"
-  }].map(d => /*#__PURE__*/React.createElement("button", {
-    key: d.key,
-    className: "diff-card-btn",
-    style: {
-      background: diff === d.key ? "#fff7ed" : "#f9fafb",
-      border: diff === d.key ? "2px solid #f97316" : "2px solid #e5e7eb",
-      boxShadow: diff === d.key ? "0 3px 0 #f97316" : "none"
-    },
-    onClick: () => setDiff(d.key)
-  }, /*#__PURE__*/React.createElement("span", {
-    className: "diff-emoji"
-  }, d.emoji), /*#__PURE__*/React.createElement("div", null, /*#__PURE__*/React.createElement("div", {
-    className: "diff-name",
-    style: {
-      color: diff === d.key ? "#9a3412" : "#1f2937"
-    }
-  }, d.name), /*#__PURE__*/React.createElement("div", {
-    className: "diff-desc"
-  }, d.desc)), diff === d.key && /*#__PURE__*/React.createElement("span", {
-    style: {
-      marginLeft: "auto",
-      fontSize: "18px"
-    }
-  }, "\u2705")))), /*#__PURE__*/React.createElement("div", {
-    className: "qcount-section"
-  }, "\u4F55\u554F\u3084\u308B\uFF1F"), /*#__PURE__*/React.createElement("div", {
-    className: "qcount-grid"
-  }, Q_OPTIONS.map(n => /*#__PURE__*/React.createElement("button", {
-    key: n,
-    className: "qcount-btn",
-    style: {
-      border: totalQ === n ? "2px solid #f97316" : "2px solid #dee2e6",
-      background: totalQ === n ? "#f97316" : "#f8f9fa",
-      color: totalQ === n ? "#fff" : "#495057",
-      boxShadow: totalQ === n ? "0 3px 0 #c2410c" : "none"
-    },
-    onClick: () => setTotalQ(n)
-  }, n, "\u554F"))), /*#__PURE__*/React.createElement("button", {
-    className: "start-btn",
-    style: {
-      background: BTN,
-      color: "#fff",
-      boxShadow: "0 4px 0 #c2410c"
-    },
-    onClick: startQuiz
-  }, "\u30B9\u30BF\u30FC\u30C8\uFF01 \uD83D\uDE80")));
+  if (mode === "setup") return (
+    <div className="setup-wrap" style={{background:"#fff7ed"}}>
+      <div className="setup-card">
+        <div className="setup-emoji">💡</div>
+        <h1 className="setup-title" style={{color:"#9a3412"}}>光の性質 理科クイズ</h1>
+        <p className="setup-sub">小学生〜中学入試レベル</p>
+        {best > 0 && <div className="best-badge" style={{background:"#ffedd5",border:"1.5px solid #fb923c",color:"#9a3412"}}>🏆 最高連続記録：<strong>{best}問</strong></div>}
+
+        <div className="qcount-section">レベルを選ぶ</div>
+        <div className="diff-btn-row">
+          {[
+            {key:"shogaku", emoji:"🌱", name:"小学生レベル", desc:"光の直進・反射・虫めがねの基本"},
+            {key:"nyushi",  emoji:"🔥", name:"中学入試レベル", desc:"屈折・凸レンズ・全反射・計算問題"},
+            {key:"mix",     emoji:"⭐", name:"ミックス", desc:"全問題からランダムに出題"},
+          ].map(d => (
+            <button key={d.key} className="diff-card-btn"
+              style={{background: diff===d.key ? "#fff7ed" : "#f9fafb",
+                      border: diff===d.key ? "2px solid #f97316" : "2px solid #e5e7eb",
+                      boxShadow: diff===d.key ? "0 3px 0 #f97316" : "none"}}
+              onClick={() => setDiff(d.key)}>
+              <span className="diff-emoji">{d.emoji}</span>
+              <div>
+                <div className="diff-name" style={{color: diff===d.key ? "#9a3412" : "#1f2937"}}>{d.name}</div>
+                <div className="diff-desc">{d.desc}</div>
+              </div>
+              {diff===d.key && <span style={{marginLeft:"auto",fontSize:"18px"}}>✅</span>}
+            </button>
+          ))}
+        </div>
+
+        <div className="qcount-section">何問やる？</div>
+        <div className="qcount-grid">
+          {Q_OPTIONS.map(n => (
+            <button key={n} className="qcount-btn"
+              style={{border: totalQ===n ? "2px solid #f97316" : "2px solid #dee2e6",
+                      background: totalQ===n ? "#f97316" : "#f8f9fa",
+                      color: totalQ===n ? "#fff" : "#495057",
+                      boxShadow: totalQ===n ? "0 3px 0 #c2410c" : "none"}}
+              onClick={() => setTotalQ(n)}>{n}問</button>
+          ))}
+        </div>
+        <button className="start-btn" style={{background:BTN, color:"#fff", boxShadow:"0 4px 0 #c2410c"}}
+          onClick={startQuiz}>スタート！ 🚀</button>
+      </div>
+    </div>
+  );
 
   // ── 結果 ──
-  if (mode === "graduated") return React.createElement("div",{className:"setup-wrap",style:{background:"#f0fdf4"}},React.createElement("div",{className:"setup-card"},React.createElement("div",{className:"setup-emoji"},"🎓"),React.createElement("h2",{className:"setup-title",style:{color:"#166534"}},"復習バンク卒業！"),React.createElement("p",{style:{fontSize:"14px",color:"#16a34a",marginBottom:"16px",fontWeight:"bold"}},"すべての問題を5回正解しました！"),React.createElement("button",{className:"start-btn",style:{background:"linear-gradient(135deg,#4ade80,#22c55e)",color:"#fff",boxShadow:"0 4px 0 #16a34a"},onClick:()=>setMode("setup")},"もどる")));
   if (mode === "result") {
-    const pct = Math.round(score / Math.max(problems.length,1) * 100);
-    return /*#__PURE__*/React.createElement("div", {
-      className: "setup-wrap",
-      style: {
-        background: "#fff7ed"
-      }
-    }, /*#__PURE__*/React.createElement("div", {
-      className: "setup-card"
-    }, /*#__PURE__*/React.createElement("div", {
-      className: "setup-emoji"
-    }, pct === 100 ? "🏆" : pct >= 70 ? "🎉" : "💪"), /*#__PURE__*/React.createElement("h2", {
-      className: "setup-title",
-      style: {
-        color: "#9a3412"
-      }
-    }, "\u304A\u308F\u308A\uFF01"), /*#__PURE__*/React.createElement("p", {
-      className: "result-score"
-    }, totalQ, "\u554F\u4E2D ", /*#__PURE__*/React.createElement("span", {
-      className: "result-big",
-      style: {
-        color: "#f97316"
-      }
-    }, score), " \u554F\u6B63\u89E3"), /*#__PURE__*/React.createElement("div", {
-      className: "pct-bar-bg",
-      style: {
-        background: "#ffedd5"
-      }
-    }, /*#__PURE__*/React.createElement("div", {
-      className: "pct-bar-fill",
-      style: {
-        background: BTN,
-        width: `${pct}%`
-      }
-    })), /*#__PURE__*/React.createElement("p", {
-      className: "pct-text"
-    }, pct, "%"), /*#__PURE__*/React.createElement("div", {
-      className: "streak-result-row"
-    }, /*#__PURE__*/React.createElement("div", {
-      className: "streak-result-box"
-    }, /*#__PURE__*/React.createElement("div", {
-      className: "streak-result-label"
-    }, "\u3053\u306E\u56DE\u306E\u6700\u9AD8\u9023\u7D9A"), /*#__PURE__*/React.createElement("div", {
-      className: "streak-result-val",
-      style: {
-        color: "#ef4444"
-      }
-    }, "\uD83D\uDD25 ", streak, "\u554F")), /*#__PURE__*/React.createElement("div", {
-      className: "streak-result-box"
-    }, /*#__PURE__*/React.createElement("div", {
-      className: "streak-result-label"
-    }, "\u6B74\u4EE3\u6700\u9AD8\u9023\u7D9A"), /*#__PURE__*/React.createElement("div", {
-      className: "streak-result-val",
-      style: {
-        color: "#f59f00"
-      }
-    }, "\uD83C\uDFC6 ", best, "\u554F"))), /*#__PURE__*/React.createElement("div", {
-      style: {
-        display: "flex",
-        gap: "8px",
-        marginTop: "16px"
-      }
-    }, /*#__PURE__*/React.createElement("button", {
-      className: "start-btn",
-      style: {
-        background: BTN,
-        color: "#fff",
-        boxShadow: "0 4px 0 #c2410c"
-      },
-      onClick: startQuiz
-    }, "\u3082\u3046\u4E00\u5EA6"), /*#__PURE__*/React.createElement("button", {
-      className: "start-btn",
-      style: {
-        background: "#868e96",
-        color: "#fff",
-        boxShadow: "0 4px 0 #495057"
-      },
-      onClick: () => setMode("setup")
-    }, "\u8A2D\u5B9A\u3078"))));
+    const pct = Math.round((score/totalQ)*100);
+    return (
+      <div className="setup-wrap" style={{background:"#fff7ed"}}>
+        <div className="setup-card">
+          <div className="setup-emoji">{pct===100?"🏆":pct>=70?"🎉":"💪"}</div>
+          <h2 className="setup-title" style={{color:"#9a3412"}}>おわり！</h2>
+          <p className="result-score">{totalQ}問中 <span className="result-big" style={{color:"#f97316"}}>{score}</span> 問正解</p>
+          <div className="pct-bar-bg" style={{background:"#ffedd5"}}><div className="pct-bar-fill" style={{background:BTN, width:`${pct}%`}}/></div>
+          <p className="pct-text">{pct}%</p>
+          <div className="streak-result-row">
+            <div className="streak-result-box"><div className="streak-result-label">この回の最高連続</div><div className="streak-result-val" style={{color:"#ef4444"}}>🔥 {streak}問</div></div>
+            <div className="streak-result-box"><div className="streak-result-label">歴代最高連続</div><div className="streak-result-val" style={{color:"#f59f00"}}>🏆 {best}問</div></div>
+          </div>
+          <div style={{display:"flex",gap:"8px",marginTop:"16px"}}>
+            <button className="start-btn" style={{background:BTN,color:"#fff",boxShadow:"0 4px 0 #c2410c"}} onClick={startQuiz}>もう一度</button>
+            <button className="start-btn" style={{background:"#868e96",color:"#fff",boxShadow:"0 4px 0 #495057"}} onClick={() => setMode("setup")}>設定へ</button>
+          </div>
+        </div>
+      </div>
+    );
   }
+
   if (!problem) return null;
 
   // ── クイズ画面 ──
-  return /*#__PURE__*/React.createElement("div", {
-    className: "rika-root"
-  }, celeb && /*#__PURE__*/React.createElement("div", {
-    className: "celeb-overlay"
-  }, /*#__PURE__*/React.createElement("div", {
-    className: "celeb-box"
-  }, /*#__PURE__*/React.createElement("div", {
-    className: "celeb-emoji"
-  }, "\uD83C\uDF89"), /*#__PURE__*/React.createElement("div", {
-    className: "celeb-text",
-    style: {
-      color: "#9a3412"
-    }
-  }, "\u305B\u3044\u304B\u3044\uFF01"), /*#__PURE__*/React.createElement("div", {
-    className: "celeb-stars"
-  }, randomStars(5)), streak >= 3 && /*#__PURE__*/React.createElement("div", {
-    className: "celeb-streak",
-    style: {
-      background: "#ef4444"
-    }
-  }, "\uD83D\uDD25 ", streak, "\u308C\u3093\u305E\u304F\uFF01"), streak === best && streak > 1 && /*#__PURE__*/React.createElement("div", {
-    className: "celeb-streak",
-    style: {
-      background: "#f59f00",
-      marginTop: "6px"
-    }
-  }, "\uD83C\uDFC6 \u65B0\u8A18\u9332\uFF01"))), /*#__PURE__*/React.createElement("div", {
-    className: "quiz-header"
-  }, /*#__PURE__*/React.createElement("div", {
-    className: "header-left"
-  }, /*#__PURE__*/React.createElement("span", {
-    className: "q-label"
-  }, "Q", current + 1, /*#__PURE__*/React.createElement("span", {
-    className: "q-total"
-  }, "/", totalQ)), /*#__PURE__*/React.createElement("span", {
-    className: "type-tag",
-    style: {
-      background: problem.color
-    }
-  }, problem.title), /*#__PURE__*/React.createElement("span", {
-    className: `diff-badge ${problem.diff === "nyushi" ? "diff-nyushi" : "diff-shogaku"}`
-  }, problem.diff === "nyushi" ? "入試" : "小学")), /*#__PURE__*/React.createElement("div", {
-    className: "header-right"
-  }, /*#__PURE__*/React.createElement("span", {
-    className: "score-label"
-  }, "\u2B50 ", score), streak >= 2 && /*#__PURE__*/React.createElement("span", {
-    className: "streak-tag-sm"
-  }, "\uD83D\uDD25", streak), best > 0 && /*#__PURE__*/React.createElement("span", {
-    className: "best-tag-sm"
-  }, "\uD83C\uDFC6", best))), /*#__PURE__*/React.createElement("div", {
-    className: "progress-bg",
-    style: {
-      background: "#ffedd5"
-    }
-  }, /*#__PURE__*/React.createElement("div", {
-    className: "progress-fill",
-    style: {
-      background: problem.color,
-      width: `${progress}%`
-    }
-  })), /*#__PURE__*/React.createElement("div", {
-    className: "problem-card",
-    style: {
-      borderTop: `5px solid ${problem.color}`
-    }
-  }, problem.question.split("\n").map((line, i) => /*#__PURE__*/React.createElement("p", {
-    key: i,
-    className: "problem-line",
-    style: {
-      fontSize: "16px"
-    }
-  }, line))), problem.qtype === "ox" && /*#__PURE__*/React.createElement(OXAnswer, {
-    problem: problem,
-    checked: checked,
-    userAnswer: userAnswer,
-    onAnswer: handleAnswer
-  }), problem.qtype === "select" && /*#__PURE__*/React.createElement(SelectAnswer, {
-    problem: problem,
-    checked: checked,
-    userAnswer: userAnswer,
-    onAnswer: handleAnswer
-  }), problem.qtype === "input" && /*#__PURE__*/React.createElement(InputAnswer, {
-    key: current,
-    problem: problem,
-    checked: checked,
-    userAnswer: userAnswer,
-    onAnswer: handleAnswer,
-    inputVal: inputVal,
-    setInputVal: setInputVal
-  }), problem.qtype === "calc" && /*#__PURE__*/React.createElement(CalcAnswer, {
-    key: current,
-    problem: problem,
-    checked: checked,
-    userAnswer: userAnswer,
-    onAnswer: handleAnswer
-  }), checked && /*#__PURE__*/React.createElement(React.Fragment, null, /*#__PURE__*/React.createElement("div", {
-    style: {
-      textAlign: "center",
-      fontSize: "20px",
-      fontWeight: "900",
-      color: isCorrect ? "#059669" : "#dc2626"
-    }
-  }, isCorrect ? "✅ せいかい！" : "❌ ざんねん…"), /*#__PURE__*/React.createElement("div", {
-    className: "explanation-card"
-  }, /*#__PURE__*/React.createElement("div", {
-    className: "explanation-label"
-  }, "\uD83D\uDCD6 \u89E3\u8AAC"), problem.explanation), /*#__PURE__*/React.createElement("button", {
-    className: "next-btn",
-    style: {
-      background: "linear-gradient(135deg,#51cf66,#20c997)",
-      color: "#fff",
-      boxShadow: "0 4px 0 #2f9e44"
-    },
-    onClick: nextQuestion
-  }, current + 1 >= totalQ ? "結果を見る 🎉" : "つぎへ →")));
-}
-ReactDOM.createRoot(document.getElementById("root")).render(/*#__PURE__*/React.createElement(App, null));
+  return (
+    <div className="rika-root">
+      {celeb && (
+        <div className="celeb-overlay">
+          <div className="celeb-box">
+            <div className="celeb-emoji">🎉</div>
+            <div className="celeb-text" style={{color:"#9a3412"}}>せいかい！</div>
+            <div className="celeb-stars">{randomStars(5)}</div>
+            {streak >= 3 && <div className="celeb-streak" style={{background:"#ef4444"}}>🔥 {streak}れんぞく！</div>}
+            {streak === best && streak > 1 && <div className="celeb-streak" style={{background:"#f59f00",marginTop:"6px"}}>🏆 新記録！</div>}
+          </div>
+        </div>
+      )}
 
+      {/* ヘッダー */}
+      <div className="quiz-header">
+        <div className="header-left">
+          <span className="q-label">Q{current+1}<span className="q-total">/{totalQ}</span></span>
+          <span className="type-tag" style={{background:problem.color}}>{problem.title}</span>
+          <span className={`diff-badge ${problem.diff === "nyushi" ? "diff-nyushi" : "diff-shogaku"}`}>
+            {problem.diff === "nyushi" ? "入試" : "小学"}
+          </span>
+        </div>
+        <div className="header-right">
+          <span className="score-label">⭐ {score}</span>
+          {streak >= 2 && <span className="streak-tag-sm">🔥{streak}</span>}
+          {best > 0 && <span className="best-tag-sm">🏆{best}</span>}
+        </div>
+      </div>
+
+      {/* プログレスバー */}
+      <div className="progress-bg" style={{background:"#ffedd5"}}>
+        <div className="progress-fill" style={{background:problem.color, width:`${progress}%`}}/>
+      </div>
+
+      {/* 問題文 */}
+      <div className="problem-card" style={{borderTop:`5px solid ${problem.color}`}}>
+        {problem.question.split("\n").map((line, i) => (
+          <p key={i} className="problem-line" style={{fontSize:"16px"}}>{line}</p>
+        ))}
+      </div>
+
+      {/* 問題タイプ別入力UI */}
+      {problem.qtype === "ox" && (
+        <OXAnswer problem={problem} checked={checked} userAnswer={userAnswer} onAnswer={handleAnswer}/>
+      )}
+      {problem.qtype === "select" && (
+        <SelectAnswer problem={problem} checked={checked} userAnswer={userAnswer} onAnswer={handleAnswer}/>
+      )}
+      {problem.qtype === "input" && (
+        <InputAnswer key={current} problem={problem} checked={checked} userAnswer={userAnswer}
+          onAnswer={handleAnswer} inputVal={inputVal} setInputVal={setInputVal}/>
+      )}
+      {problem.qtype === "calc" && (
+        <CalcAnswer key={current} problem={problem} checked={checked} userAnswer={userAnswer} onAnswer={handleAnswer}/>
+      )}
+
+      {/* 正誤フィードバック＋解説 */}
+      {checked && (
+        <>
+          <div style={{textAlign:"center", fontSize:"20px", fontWeight:"900",
+            color: isCorrect ? "#059669" : "#dc2626"}}>
+            {isCorrect ? "✅ せいかい！" : "❌ ざんねん…"}
+          </div>
+          <div className="explanation-card">
+            <div className="explanation-label">📖 解説</div>
+            {problem.explanation}
+          </div>
+          <button className="next-btn"
+            style={{background:"linear-gradient(135deg,#51cf66,#20c997)",color:"#fff",boxShadow:"0 4px 0 #2f9e44"}}
+            onClick={nextQuestion}>
+            {current+1 >= totalQ ? "結果を見る 🎉" : "つぎへ →"}
+          </button>
+        </>
+      )}
+    </div>
+  );
+}
+
+ReactDOM.createRoot(document.getElementById("root")).render(<App/>);
 </script>
 </body>
 </html>
