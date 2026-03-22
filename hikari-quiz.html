@@ -10,217 +10,6 @@
 <script src="https://cdnjs.cloudflare.com/ajax/libs/babel-standalone/7.23.2/babel.min.js"></script>
 <script src="rika-common.js"></script>
 <script>
-function genCalcProblems() {
-  const problems = [];
-
-  // ① 反射角（入射角＝反射角）×5パターン
-  for (let i = 0; i < 5; i++) {
-    const angle = randInt(10, 80);
-    problems.push({
-      qtype:"calc", diff:"nyushi", title:"反射角の計算", color:"#dc2626",
-      question:`鏡に光を当てたとき、入射角が ${angle}° でした。\n反射角は何度ですか？`,
-      answer: angle, unit:"度",
-      explanation:`反射の法則「入射角＝反射角」より、反射角も ${angle}° です。`
-    });
-  }
-
-  // ② 鏡の角度から反射後の光の向き（入射角→鏡面との角度）
-  for (let i = 0; i < 3; i++) {
-    const mirrorAngle = randInt(20, 70); // 鏡面との角度
-    const incidence = 90 - mirrorAngle;  // 法線との角度（入射角）
-    problems.push({
-      qtype:"calc", diff:"nyushi", title:"鏡面角度と入射角", color:"#dc2626",
-      question:`光が鏡の面に対して ${mirrorAngle}° の角度で当たりました。\n入射角（法線との角度）は何度ですか？`,
-      answer: incidence, unit:"度",
-      explanation:`鏡の面との角度が ${mirrorAngle}° のとき、法線（鏡に垂直な線）との角度は\n90 − ${mirrorAngle} = ${incidence}° です。これが入射角です。`
-    });
-  }
-
-  // ③ 凸レンズの公式（1/f = 1/a + 1/b）×6パターン
-  // 割り切れる組み合わせを生成
-  const lensCombos = [
-    {a:30, b:20}, {a:40, b:40}, {a:60, b:30}, {a:20, b:30},
-    {a:60, b:20}, {a:40, b:24}, {a:30, b:30}, {a:24, b:40},
-  ];
-  lensCombos.forEach(({a, b}) => {
-    // 1/f = 1/a + 1/b → f = ab/(a+b)
-    const f_num = a * b, f_den = a + b;
-    const f = f_num / f_den;
-    if (!Number.isInteger(f)) return;
-    const whichUnknown = Math.random() < 0.33 ? "f" : Math.random() < 0.5 ? "b" : "a";
-    if (whichUnknown === "f") {
-      problems.push({
-        qtype:"calc", diff:"nyushi", title:"焦点距離の計算", color:"#dc2626",
-        question:`物体をレンズの中心から ${a}cm 離して置いたら、\nレンズの反対側 ${b}cm のところに実像ができました。\n焦点距離は何cmですか？\n（1/f = 1/a + 1/b を使う）`,
-        answer: f, unit:"cm",
-        explanation:`1/f = 1/${a} + 1/${b} = ${b}/${f_num} + ${a}/${f_num} = ${a+b}/${f_num}\nf = ${f_num}/${a+b} = ${f}cm`
-      });
-    } else if (whichUnknown === "b") {
-      // 1/b = 1/f - 1/a → b = af/(a-f)
-      const b2_num = a * f, b2_den = a - f;
-      if (b2_den <= 0 || !Number.isInteger(b2_num / b2_den)) return;
-      const b2 = b2_num / b2_den;
-      problems.push({
-        qtype:"calc", diff:"nyushi", title:"像の位置の計算", color:"#dc2626",
-        question:`焦点距離 ${f}cm の凸レンズの中心から\n物体を ${a}cm 離して置きました。\n実像はレンズの反対側何cmにできますか？\n（1/f = 1/a + 1/b を使う）`,
-        answer: b2, unit:"cm",
-        explanation:`1/${b2} = 1/${f} - 1/${a} = ${a}/${f*a} - ${f}/${f*a} = ${a-f}/${f*a}\nb = ${f*a}/${a-f} = ${b2}cm`
-      });
-    }
-  });
-
-  // ④ 光の速さ計算（距離＝速さ×時間、30万km/s）
-  const lightTimes = [1, 2, 3, 5, 8, 10];
-  lightTimes.forEach(t => {
-    problems.push({
-      qtype:"calc", diff:"nyushi", title:"光の速さ計算", color:"#dc2626",
-      question:`光の速さを秒速30万kmとします。\n光が ${t} 秒間に進む距離は何万kmですか？`,
-      answer: 30 * t, unit:"万km",
-      explanation:`距離 = 速さ × 時間 = 30万km × ${t} = ${30*t}万km`
-    });
-  });
-
-  // ⑤ 入射角から屈折角（近似、空気→水：n=1.33, 小学向け簡易版）
-  // 小学レベル：「入射角が大きいほど屈折角も大きい」の定性問題として出す
-  const angles1 = [30, 40, 45, 50, 60];
-  angles1.forEach(inc => {
-    // 簡易近似：sinθ2 = sinθ1 / 1.33
-    const ref = Math.round(Math.asin(Math.sin(inc * Math.PI/180) / 1.33) * 180/Math.PI);
-    if (ref > 0 && ref < inc) {
-      problems.push({
-        qtype:"calc", diff:"nyushi", title:"屈折角の計算", color:"#dc2626",
-        question:`光が空気から水に入るとき、入射角が ${inc}° でした。\n屈折角は約何度ですか？\n（空気の屈折率1.0、水の屈折率1.33として計算）`,
-        answer: ref, unit:"度",
-        explanation:`スネルの法則：sin${inc}° / sin屈折角 = 1.33\nsin屈折角 = sin${inc}° ÷ 1.33 ≈ ${ref}°\n（光が密な媒質に入るため、入射角 ${inc}° > 屈折角 ${ref}°）`
-      });
-    }
-  });
-
-  return problems;
-}
-
-function getProblems(diff) {
-  const calcProbs = genCalcProblems();
-  if (diff === "shogaku") return [...PROBLEMS_SHOGAKU];
-  if (diff === "nyushi")  return [...PROBLEMS_NYUSHI, ...calcProbs];
-  return [...PROBLEMS_SHOGAKU, ...PROBLEMS_NYUSHI, ...calcProbs];
-}
-
-function pickProblems(diff, total) {
-  const pool = getProblems(diff);
-  const result = [];
-  const used = new Set();
-  // プールが足りない場合は重複を許す
-  while (result.length < total) {
-    const idx = randInt(0, pool.length - 1);
-    if (!used.has(idx) || pool.length < total) {
-      used.add(idx);
-      result.push({...pool[idx]});
-    }
-  }
-  return result;
-}
-
-</script>
-<style>
-  body { background: #fff7ed; }
-  .cursor-blink { color: #f97316; }
-
-  /* 理科クイズ専用スタイル */
-  .rika-root {
-    min-height: 100vh; background: #fff7ed;
-    padding: 12px; max-width: 480px; margin: 0 auto;
-    display: flex; flex-direction: column; gap: 10px;
-  }
-
-  /* ○× ボタン */
-  .ox-row { display: flex; gap: 12px; }
-  .ox-btn {
-    flex: 1; height: 80px; border: none; border-radius: 20px;
-    font-size: 40px; font-weight: 900; cursor: pointer;
-    transition: transform 0.08s; box-shadow: 0 4px 0 rgba(0,0,0,0.2);
-  }
-  .ox-btn:active { transform: translateY(3px); box-shadow: 0 1px 0 rgba(0,0,0,0.2); }
-  .ox-btn.maru { background: linear-gradient(135deg,#ff6b6b,#ee5a24); color:#fff; }
-  .ox-btn.batsu { background: linear-gradient(135deg,#4a90d9,#0652DD); color:#fff; }
-  .ox-btn.selected-correct { background: #2ecc71; box-shadow: 0 4px 0 #27ae60; }
-  .ox-btn.selected-wrong   { background: #e74c3c; box-shadow: 0 4px 0 #c0392b; opacity:0.6; }
-
-  /* 選択肢ボタン */
-  .select-grid { display: flex; flex-direction: column; gap: 8px; }
-  .select-btn {
-    width: 100%; padding: 14px 16px; border: 2px solid #e5e7eb;
-    border-radius: 14px; background: #fff; cursor: pointer;
-    font-size: 14px; font-weight: bold; text-align: left;
-    transition: all 0.1s; font-family: inherit;
-    box-shadow: 0 2px 0 #e5e7eb;
-  }
-  .select-btn:active { transform: translateY(1px); }
-  .select-btn.correct { background: #d1fae5; border-color: #10b981; color: #065f46; box-shadow: 0 2px 0 #10b981; }
-  .select-btn.wrong   { background: #fee2e2; border-color: #ef4444; color: #991b1b; opacity:0.7; }
-  .select-btn.show-correct { background: #d1fae5; border-color: #10b981; color: #065f46; }
-  .select-btn.disabled { cursor: default; }
-
-  /* テキスト入力 */
-  .input-area {
-    background: #fff; border: 2px solid #e5e7eb; border-radius: 14px;
-    padding: 12px 14px; display: flex; flex-direction: column; gap: 8px;
-  }
-  .input-area.focused { border-color: #f97316; box-shadow: 0 0 0 3px rgba(249,115,22,0.15); }
-  .input-area.correct { border-color: #10b981; background: #d1fae5; }
-  .input-area.wrong   { border-color: #ef4444; background: #fee2e2; }
-  .input-label { font-size: 11px; font-weight: bold; color: #9ca3af; text-transform: uppercase; letter-spacing: 0.05em; }
-  .input-field {
-    width: 100%; border: none; outline: none; font-size: 18px;
-    font-weight: bold; background: transparent; font-family: inherit;
-    color: #1f2937;
-  }
-  .input-field::placeholder { color: #d1d5db; font-weight: normal; }
-  .correct-ans-hint { font-size: 13px; color: #065f46; font-weight: bold; }
-
-  /* 計算キーパッド */
-  .calc-keypad { background: #fde8d0; border-radius: 18px; padding: 10px; display: flex; flex-direction: column; gap: 6px; }
-
-  /* 解説カード */
-  .explanation-card {
-    background: #fef3c7; border: 1.5px solid #f59e0b;
-    border-radius: 12px; padding: 12px 14px; font-size: 13px;
-    color: #78350f; line-height: 1.8;
-  }
-  .explanation-label { font-weight: 900; margin-bottom: 4px; font-size: 12px; color: #92400e; }
-
-  /* 難易度バッジ */
-  .diff-badge {
-    font-size: 10px; font-weight: bold; padding: 2px 8px;
-    border-radius: 99px; margin-left: 6px;
-  }
-  .diff-shogaku { background: #dcfce7; color: #166534; }
-  .diff-nyushi  { background: #fef3c7; color: #92400e; }
-
-  /* 結果画面の正解率バー */
-  .result-detail { display:flex; flex-direction:column; gap:6px; margin:12px 0; }
-  .result-row    { display:flex; justify-content:space-between; font-size:13px; }
-
-  /* 難易度選択 */
-  .diff-btn-row { display:flex; flex-direction:column; gap:8px; margin-bottom:20px; }
-  .diff-card-btn {
-    display:flex; align-items:center; gap:12px;
-    padding:12px 16px; border-radius:14px; cursor:pointer;
-    text-align:left; border:2px solid transparent;
-  }
-  .diff-card-btn .diff-emoji { font-size:24px; flex-shrink:0; }
-  .diff-card-btn .diff-name  { font-weight:900; font-size:15px; }
-  .diff-card-btn .diff-desc  { font-size:11px; color:#6b7280; margin-top:2px; }
-</style>
-</head>
-<body>
-<div id="root"></div>
-<script type="text/babel">
-const QUIZ_KEY = "hikari";
-const { useState, useEffect, useRef } = React;
-const STORAGE_KEY = "hikari_best_streak";
-
-// ─── KEYPAD（計算問題用）───────────────────────────────────
 const CALC_KEYPAD = [
   [{label:"7",val:"7"},{label:"8",val:"8"},{label:"9",val:"9"},{label:".",val:"."}],
   [{label:"4",val:"4"},{label:"5",val:"5"},{label:"6",val:"6"},{label:"×",val:"×"}],
@@ -564,6 +353,217 @@ const PROBLEMS_NYUSHI = [
 ];
 
 // ─── 動的計算問題ジェネレーター ────────────────────────────
+function genCalcProblems() {
+  const problems = [];
+
+  // ① 反射角（入射角＝反射角）×5パターン
+  for (let i = 0; i < 5; i++) {
+    const angle = randInt(10, 80);
+    problems.push({
+      qtype:"calc", diff:"nyushi", title:"反射角の計算", color:"#dc2626",
+      question:`鏡に光を当てたとき、入射角が ${angle}° でした。\n反射角は何度ですか？`,
+      answer: angle, unit:"度",
+      explanation:`反射の法則「入射角＝反射角」より、反射角も ${angle}° です。`
+    });
+  }
+
+  // ② 鏡の角度から反射後の光の向き（入射角→鏡面との角度）
+  for (let i = 0; i < 3; i++) {
+    const mirrorAngle = randInt(20, 70); // 鏡面との角度
+    const incidence = 90 - mirrorAngle;  // 法線との角度（入射角）
+    problems.push({
+      qtype:"calc", diff:"nyushi", title:"鏡面角度と入射角", color:"#dc2626",
+      question:`光が鏡の面に対して ${mirrorAngle}° の角度で当たりました。\n入射角（法線との角度）は何度ですか？`,
+      answer: incidence, unit:"度",
+      explanation:`鏡の面との角度が ${mirrorAngle}° のとき、法線（鏡に垂直な線）との角度は\n90 − ${mirrorAngle} = ${incidence}° です。これが入射角です。`
+    });
+  }
+
+  // ③ 凸レンズの公式（1/f = 1/a + 1/b）×6パターン
+  // 割り切れる組み合わせを生成
+  const lensCombos = [
+    {a:30, b:20}, {a:40, b:40}, {a:60, b:30}, {a:20, b:30},
+    {a:60, b:20}, {a:40, b:24}, {a:30, b:30}, {a:24, b:40},
+  ];
+  lensCombos.forEach(({a, b}) => {
+    // 1/f = 1/a + 1/b → f = ab/(a+b)
+    const f_num = a * b, f_den = a + b;
+    const f = f_num / f_den;
+    if (!Number.isInteger(f)) return;
+    const whichUnknown = Math.random() < 0.33 ? "f" : Math.random() < 0.5 ? "b" : "a";
+    if (whichUnknown === "f") {
+      problems.push({
+        qtype:"calc", diff:"nyushi", title:"焦点距離の計算", color:"#dc2626",
+        question:`物体をレンズの中心から ${a}cm 離して置いたら、\nレンズの反対側 ${b}cm のところに実像ができました。\n焦点距離は何cmですか？\n（1/f = 1/a + 1/b を使う）`,
+        answer: f, unit:"cm",
+        explanation:`1/f = 1/${a} + 1/${b} = ${b}/${f_num} + ${a}/${f_num} = ${a+b}/${f_num}\nf = ${f_num}/${a+b} = ${f}cm`
+      });
+    } else if (whichUnknown === "b") {
+      // 1/b = 1/f - 1/a → b = af/(a-f)
+      const b2_num = a * f, b2_den = a - f;
+      if (b2_den <= 0 || !Number.isInteger(b2_num / b2_den)) return;
+      const b2 = b2_num / b2_den;
+      problems.push({
+        qtype:"calc", diff:"nyushi", title:"像の位置の計算", color:"#dc2626",
+        question:`焦点距離 ${f}cm の凸レンズの中心から\n物体を ${a}cm 離して置きました。\n実像はレンズの反対側何cmにできますか？\n（1/f = 1/a + 1/b を使う）`,
+        answer: b2, unit:"cm",
+        explanation:`1/${b2} = 1/${f} - 1/${a} = ${a}/${f*a} - ${f}/${f*a} = ${a-f}/${f*a}\nb = ${f*a}/${a-f} = ${b2}cm`
+      });
+    }
+  });
+
+  // ④ 光の速さ計算（距離＝速さ×時間、30万km/s）
+  const lightTimes = [1, 2, 3, 5, 8, 10];
+  lightTimes.forEach(t => {
+    problems.push({
+      qtype:"calc", diff:"nyushi", title:"光の速さ計算", color:"#dc2626",
+      question:`光の速さを秒速30万kmとします。\n光が ${t} 秒間に進む距離は何万kmですか？`,
+      answer: 30 * t, unit:"万km",
+      explanation:`距離 = 速さ × 時間 = 30万km × ${t} = ${30*t}万km`
+    });
+  });
+
+  // ⑤ 入射角から屈折角（近似、空気→水：n=1.33, 小学向け簡易版）
+  // 小学レベル：「入射角が大きいほど屈折角も大きい」の定性問題として出す
+  const angles1 = [30, 40, 45, 50, 60];
+  angles1.forEach(inc => {
+    // 簡易近似：sinθ2 = sinθ1 / 1.33
+    const ref = Math.round(Math.asin(Math.sin(inc * Math.PI/180) / 1.33) * 180/Math.PI);
+    if (ref > 0 && ref < inc) {
+      problems.push({
+        qtype:"calc", diff:"nyushi", title:"屈折角の計算", color:"#dc2626",
+        question:`光が空気から水に入るとき、入射角が ${inc}° でした。\n屈折角は約何度ですか？\n（空気の屈折率1.0、水の屈折率1.33として計算）`,
+        answer: ref, unit:"度",
+        explanation:`スネルの法則：sin${inc}° / sin屈折角 = 1.33\nsin屈折角 = sin${inc}° ÷ 1.33 ≈ ${ref}°\n（光が密な媒質に入るため、入射角 ${inc}° > 屈折角 ${ref}°）`
+      });
+    }
+  });
+
+  return problems;
+}
+
+function getProblems(diff) {
+  const calcProbs = genCalcProblems();
+  if (diff === "shogaku") return [...PROBLEMS_SHOGAKU];
+  if (diff === "nyushi")  return [...PROBLEMS_NYUSHI, ...calcProbs];
+  return [...PROBLEMS_SHOGAKU, ...PROBLEMS_NYUSHI, ...calcProbs];
+}
+
+function pickProblems(diff, total) {
+  const pool = getProblems(diff);
+  const result = [];
+  const used = new Set();
+  // プールが足りない場合は重複を許す
+  while (result.length < total) {
+    const idx = randInt(0, pool.length - 1);
+    if (!used.has(idx) || pool.length < total) {
+      used.add(idx);
+      result.push({...pool[idx]});
+    }
+  }
+  return result;
+}
+
+</script>
+<style>
+  body { background: #fff7ed; }
+  .cursor-blink { color: #f97316; }
+
+  /* 理科クイズ専用スタイル */
+  .rika-root {
+    min-height: 100vh; background: #fff7ed;
+    padding: 12px; max-width: 480px; margin: 0 auto;
+    display: flex; flex-direction: column; gap: 10px;
+  }
+
+  /* ○× ボタン */
+  .ox-row { display: flex; gap: 12px; }
+  .ox-btn {
+    flex: 1; height: 80px; border: none; border-radius: 20px;
+    font-size: 40px; font-weight: 900; cursor: pointer;
+    transition: transform 0.08s; box-shadow: 0 4px 0 rgba(0,0,0,0.2);
+  }
+  .ox-btn:active { transform: translateY(3px); box-shadow: 0 1px 0 rgba(0,0,0,0.2); }
+  .ox-btn.maru { background: linear-gradient(135deg,#ff6b6b,#ee5a24); color:#fff; }
+  .ox-btn.batsu { background: linear-gradient(135deg,#4a90d9,#0652DD); color:#fff; }
+  .ox-btn.selected-correct { background: #2ecc71; box-shadow: 0 4px 0 #27ae60; }
+  .ox-btn.selected-wrong   { background: #e74c3c; box-shadow: 0 4px 0 #c0392b; opacity:0.6; }
+
+  /* 選択肢ボタン */
+  .select-grid { display: flex; flex-direction: column; gap: 8px; }
+  .select-btn {
+    width: 100%; padding: 14px 16px; border: 2px solid #e5e7eb;
+    border-radius: 14px; background: #fff; cursor: pointer;
+    font-size: 14px; font-weight: bold; text-align: left;
+    transition: all 0.1s; font-family: inherit;
+    box-shadow: 0 2px 0 #e5e7eb;
+  }
+  .select-btn:active { transform: translateY(1px); }
+  .select-btn.correct { background: #d1fae5; border-color: #10b981; color: #065f46; box-shadow: 0 2px 0 #10b981; }
+  .select-btn.wrong   { background: #fee2e2; border-color: #ef4444; color: #991b1b; opacity:0.7; }
+  .select-btn.show-correct { background: #d1fae5; border-color: #10b981; color: #065f46; }
+  .select-btn.disabled { cursor: default; }
+
+  /* テキスト入力 */
+  .input-area {
+    background: #fff; border: 2px solid #e5e7eb; border-radius: 14px;
+    padding: 12px 14px; display: flex; flex-direction: column; gap: 8px;
+  }
+  .input-area.focused { border-color: #f97316; box-shadow: 0 0 0 3px rgba(249,115,22,0.15); }
+  .input-area.correct { border-color: #10b981; background: #d1fae5; }
+  .input-area.wrong   { border-color: #ef4444; background: #fee2e2; }
+  .input-label { font-size: 11px; font-weight: bold; color: #9ca3af; text-transform: uppercase; letter-spacing: 0.05em; }
+  .input-field {
+    width: 100%; border: none; outline: none; font-size: 18px;
+    font-weight: bold; background: transparent; font-family: inherit;
+    color: #1f2937;
+  }
+  .input-field::placeholder { color: #d1d5db; font-weight: normal; }
+  .correct-ans-hint { font-size: 13px; color: #065f46; font-weight: bold; }
+
+  /* 計算キーパッド */
+  .calc-keypad { background: #fde8d0; border-radius: 18px; padding: 10px; display: flex; flex-direction: column; gap: 6px; }
+
+  /* 解説カード */
+  .explanation-card {
+    background: #fef3c7; border: 1.5px solid #f59e0b;
+    border-radius: 12px; padding: 12px 14px; font-size: 13px;
+    color: #78350f; line-height: 1.8;
+  }
+  .explanation-label { font-weight: 900; margin-bottom: 4px; font-size: 12px; color: #92400e; }
+
+  /* 難易度バッジ */
+  .diff-badge {
+    font-size: 10px; font-weight: bold; padding: 2px 8px;
+    border-radius: 99px; margin-left: 6px;
+  }
+  .diff-shogaku { background: #dcfce7; color: #166534; }
+  .diff-nyushi  { background: #fef3c7; color: #92400e; }
+
+  /* 結果画面の正解率バー */
+  .result-detail { display:flex; flex-direction:column; gap:6px; margin:12px 0; }
+  .result-row    { display:flex; justify-content:space-between; font-size:13px; }
+
+  /* 難易度選択 */
+  .diff-btn-row { display:flex; flex-direction:column; gap:8px; margin-bottom:20px; }
+  .diff-card-btn {
+    display:flex; align-items:center; gap:12px;
+    padding:12px 16px; border-radius:14px; cursor:pointer;
+    text-align:left; border:2px solid transparent;
+  }
+  .diff-card-btn .diff-emoji { font-size:24px; flex-shrink:0; }
+  .diff-card-btn .diff-name  { font-weight:900; font-size:15px; }
+  .diff-card-btn .diff-desc  { font-size:11px; color:#6b7280; margin-top:2px; }
+</style>
+</head>
+<body>
+<div id="root"></div>
+<script type="text/babel">
+const QUIZ_KEY = "hikari";
+const { useState, useEffect, useRef } = React;
+const STORAGE_KEY = "hikari_best_streak";
+
+// ─── KEYPAD（計算問題用）───────────────────────────────────
 // ─── 問題UIコンポーネント ──────────────────────────────────
 
 function OXAnswer({ problem, checked, userAnswer, onAnswer }) {
@@ -774,14 +774,21 @@ function App() {
         <p className="setup-sub">小学生〜中学入試レベル</p>
         <div style={{marginBottom:"16px"}}>
           <button onClick={()=>{if(reviewBank.length>0)startReview();}}
-            style={{width:"100%",padding:"14px 16px",borderRadius:"14px",cursor:reviewBank.length>0?"pointer":"default",border:reviewBank.length>0?"2px solid #ef4444":"2px solid #e5e7eb",background:reviewBank.length>0?"#fef2f2":"#f9fafb",display:"flex",alignItems:"center",justifyContent:"space-between",fontFamily:"inherit",opacity:reviewBank.length===0?0.45:1}}>
+            style={{width:"100%",padding:"14px 16px",borderRadius:"14px",
+              cursor:reviewBank.length>0?"pointer":"default",
+              border:reviewBank.length>0?"2px solid #ef4444":"2px solid #e5e7eb",
+              background:reviewBank.length>0?"#fef2f2":"#f9fafb",
+              display:"flex",alignItems:"center",justifyContent:"space-between",
+              fontFamily:"inherit",opacity:reviewBank.length===0?0.45:1}}>
             <div style={{textAlign:"left"}}>
-              <div style={{fontWeight:"900",fontSize:"15px",color:reviewBank.length>0?"#b91c1c":"#374151"}}>{"📚 復習モード"}</div>
-              {reviewBank.length>0&&<div style={{fontSize:"11px",color:"#ef4444",marginTop:"2px"}}>{"タップして今すぐ開始！"}</div>}
+              <div style={{fontWeight:"900",fontSize:"15px",color:reviewBank.length>0?"#b91c1c":"#374151"}}>📚 復習モード</div>
+              {reviewBank.length>0&&<div style={{fontSize:"11px",color:"#ef4444",marginTop:"2px"}}>タップして今すぐ開始！</div>}
             </div>
-            <span style={{background:reviewBank.length>0?"#ef4444":"#d1d5db",color:"#fff",borderRadius:"99px",padding:"4px 12px",fontSize:"13px",fontWeight:"bold"}}>{reviewBank.length>0?reviewBank.length+"問":"なし"}</span>
+            <span style={{background:reviewBank.length>0?"#ef4444":"#d1d5db",color:"#fff",borderRadius:"99px",padding:"4px 12px",fontSize:"13px",fontWeight:"bold"}}>
+              {reviewBank.length>0?`${reviewBank.length}問`:"なし"}
+            </span>
           </button>
-          {reviewBank.length===0&&<div style={{fontSize:"11px",color:"#9ca3af",textAlign:"center",marginTop:"4px"}}>{"間違えた問題が溜まるとここで復習できます"}</div>}
+          {reviewBank.length===0&&<div style={{fontSize:"11px",color:"#9ca3af",textAlign:"center",marginTop:"4px"}}>間違えた問題が溜まるとここで復習できます</div>}
         </div>
         {best > 0 && <div className="best-badge" style={{background:"#ffedd5",border:"1.5px solid #fb923c",color:"#9a3412"}}>🏆 最高連続記録：<strong>{best}問</strong></div>}
 
@@ -856,7 +863,7 @@ function App() {
             <button className="start-btn" style={{background:"#868e96",color:"#fff",boxShadow:"0 4px 0 #495057"}} onClick={() => setMode("setup")}>設定へ</button>
           </div>
           {reviewBank.length>0&&(
-            <button className="start-btn" style={{background:"linear-gradient(135deg,#ef4444,#dc2626)",color:"#fff",boxShadow:"0 4px 0 #991b1b",marginTop:"8px",width:"100%"}} onClick={startReview}>{"続けて復習する 📚 ("}{reviewBank.length}{"問)"}</button>
+            <button className="start-btn" style={{background:"linear-gradient(135deg,#ef4444,#dc2626)",color:"#fff",boxShadow:"0 4px 0 #991b1b",marginTop:"8px",width:"100%"}} onClick={startReview}>続けて復習する 📚 ({reviewBank.length}問)</button>
           )}
         </div>
       </div>
