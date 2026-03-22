@@ -41,16 +41,16 @@ const Q_OPTIONS = [5, 10, 15, 20];
 
 </script>
 <script>
+const QUIZ_KEY="oto";
 
 const REVIEW_CORRECT_NEEDED = 5;
-function _reviewId(p){return((p.title||"")+("|")+(p._genType!==undefined?String(p._genType):p.question||"")).slice(0,60);}
-function reviewGetAll(k){try{var r=localStorage.getItem("review_"+k);return r?JSON.parse(r):[];}catch(e){return[];}}
-function _reviewSaveAll(k,b){try{localStorage.setItem("review_"+k,JSON.stringify(b));}catch(e){}}
-function reviewSave(k,p){try{var bank=reviewGetAll(k),id=_reviewId(p),ex=bank.find(function(x){return x._id===id;});if(ex){ex._missCount=(ex._missCount||0)+1;ex._correctCount=0;}else{var s=Object.assign({},p);delete s.figure;bank.push(Object.assign(s,{_id:id,_savedAt:Date.now(),_missCount:1,_correctCount:0,_isDynamic:p._genType!==undefined}));}  _reviewSaveAll(k,bank);}catch(e){}}
-function reviewMarkCorrect(k,p){try{var bank=reviewGetAll(k),id=_reviewId(p),idx=bank.findIndex(function(x){return x._id===id;});if(idx===-1)return false;bank[idx]._correctCount=(bank[idx]._correctCount||0)+1;var grad=bank[idx]._correctCount>=REVIEW_CORRECT_NEEDED;if(grad)bank.splice(idx,1);_reviewSaveAll(k,bank);return grad;}catch(e){return false;}}
-function reviewGetProblems(k,genFn){return reviewGetAll(k).map(function(e){if(e._isDynamic&&genFn&&e._genType!==undefined){try{var f=genFn(e._genType);if(f)return Object.assign({},f,{_id:e._id,_missCount:e._missCount,_correctCount:e._correctCount});}catch(err){}}return e;}).filter(Boolean);}
+function _rvId(p){return((p.title||"")+"|"+(p._genType!==undefined?String(p._genType):p.question||"")).slice(0,60);}
+function rvGetAll(k){try{var r=localStorage.getItem("rv_"+k);return r?JSON.parse(r):[];}catch(e){return[];}}
+function _rvSave(k,b){try{localStorage.setItem("rv_"+k,JSON.stringify(b));}catch(e){}}
+function rvAdd(k,p){try{var b=rvGetAll(k),id=_rvId(p),ex=b.find(function(x){return x._id===id;});if(ex){ex.miss=(ex.miss||0)+1;ex.ok=0;}else{var s={};Object.keys(p).forEach(function(key){if(key!=='figure')s[key]=p[key];});s._id=id;s._t=Date.now();s.miss=1;s.ok=0;b.push(s);}  _rvSave(k,b);}catch(e){}}
+function rvCorrect(k,p){try{var b=rvGetAll(k),id=_rvId(p),i=b.findIndex(function(x){return x._id===id;});if(i<0)return false;b[i].ok=(b[i].ok||0)+1;var g=b[i].ok>=REVIEW_CORRECT_NEEDED;if(g)b.splice(i,1);_rvSave(k,b);return g;}catch(e){return false;}}
+function rvGetProblems(k){return rvGetAll(k);}
 
-const QUIZ_KEY = "oto";
 </script>
 <style>
   body { background: #eff6ff; }
@@ -122,7 +122,6 @@ const QUIZ_KEY = "oto";
 <div id="root"></div>
 <script type="text/babel">
 const { useState, useEffect, useRef } = React;
-// QUIZ_KEY は外部scriptで定義済み
 const STORAGE_KEY = "oto_best_streak";
 
 const CALC_KEYPAD = [
@@ -369,10 +368,10 @@ function App() {
   const saveBest = v => { try { localStorage.setItem(STORAGE_KEY,String(v)); } catch(_) {} };
 
   const startReview = () => {
-    const bank = reviewGetAll(QUIZ_KEY);
+    const bank = rvGetAll(QUIZ_KEY);
     setReviewBank(bank);
     if(bank.length === 0){ setMode("setup"); return; }
-    setProblems(reviewGetProblems(QUIZ_KEY, null));
+    setProblems(rvGetProblems(QUIZ_KEY));
     setCurrent(0); setScore(0); setStreak(0);
     setChecked(false); setUserAnswer(null); setInputVal(""); setCeleb(false);
     setMode("review");
@@ -399,14 +398,14 @@ function App() {
     if (ok) {
       setScore(s=>s+1); const ns=streak+1; setStreak(ns);
       if (ns>best) { setBest(ns); saveBest(ns); }
-      setCeleb(true); setTimeout(()=>setCeleb(false),1800); reviewMarkCorrect(QUIZ_KEY,problem); setReviewBank(reviewGetAll(QUIZ_KEY));
-    } else { setStreak(0); reviewSave(QUIZ_KEY, problem); setReviewBank(reviewGetAll(QUIZ_KEY)); }
+      setCeleb(true); setTimeout(()=>setCeleb(false),1800); rvCorrect(QUIZ_KEY,problem); setReviewBank(rvGetAll(QUIZ_KEY));
+    } else { setStreak(0); rvAdd(QUIZ_KEY, problem); setReviewBank(rvGetAll(QUIZ_KEY)); }
   };
 
   const nextQuestion = () => {
-    const _end = current+1>=problems.length;
-    if(_end && mode==="review"){const b=reviewGetAll(QUIZ_KEY);setReviewBank(b);if(b.length>0){startReview();}else{setMode("graduated");}return;}
-    if(_end){ setMode("result"); return; }
+    const _e=current+1>=problems.length;
+    if(_e&&mode==="review"){const b=rvGetAll(QUIZ_KEY);setReviewBank(b);if(b.length>0){startReview();}else{setMode("graduated");}return;}
+    if(_e){setMode("result");return;}
     setCurrent(c=>c+1);
     setChecked(false); setUserAnswer(null); setInputVal(""); setCeleb(false);
   };
