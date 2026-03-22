@@ -828,29 +828,6 @@ function App() {
       </div>
     );
   }
-  if (false) {
-    const pct = Math.round((score/totalQ)*100);
-    return (
-      <div className="setup-wrap" style={{background:"#fff7ed"}}>
-        <div className="setup-card">
-          <div className="setup-emoji">{pct===100?"🏆":pct>=70?"🎉":"💪"}</div>
-          <h2 className="setup-title" style={{color:"#9a3412"}}>おわり！</h2>
-          <p className="result-score">{totalQ}問中 <span className="result-big" style={{color:"#f97316"}}>{score}</span> 問正解</p>
-          <div className="pct-bar-bg" style={{background:"#ffedd5"}}><div className="pct-bar-fill" style={{background:BTN, width:`${pct}%`}}/></div>
-          <p className="pct-text">{pct}%</p>
-          <div className="streak-result-row">
-            <div className="streak-result-box"><div className="streak-result-label">この回の最高連続</div><div className="streak-result-val" style={{color:"#ef4444"}}>🔥 {streak}問</div></div>
-            <div className="streak-result-box"><div className="streak-result-label">歴代最高連続</div><div className="streak-result-val" style={{color:"#f59f00"}}>🏆 {best}問</div></div>
-          </div>
-          <div style={{display:"flex",gap:"8px",marginTop:"16px"}}>
-            <button className="start-btn" style={{background:BTN,color:"#fff",boxShadow:"0 4px 0 #c2410c"}} onClick={startQuiz}>もう一度</button>
-            <button className="start-btn" style={{background:"#868e96",color:"#fff",boxShadow:"0 4px 0 #495057"}} onClick={() => setMode("setup")}>設定へ</button>
-          </div>
-        </div>
-      </div>
-    );
-  }
-
   if (!problem) return null;
 
   // ── クイズ画面 ──
