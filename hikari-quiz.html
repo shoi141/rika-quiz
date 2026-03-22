@@ -9,6 +9,39 @@
 <script src="https://cdnjs.cloudflare.com/ajax/libs/react-dom/18.2.0/umd/react-dom.production.min.js"></script>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/babel-standalone/7.23.2/babel.min.js"></script>
 <script src="rika-common.js"></script>
+<script>
+const QUIZ_KEY="hikari";
+
+const REVIEW_CORRECT_NEEDED = 5;
+function rvId(p){return((p.title||"")+"|"+(p.question||"")).slice(0,60);}
+function rvGetAll(k){try{var r=localStorage.getItem("rv_"+k);return r?JSON.parse(r):[];}catch(e){return[];}}
+function rvSaveAll(k,b){try{localStorage.setItem("rv_"+k,JSON.stringify(b));}catch(e){}}
+function rvAdd(k,p){
+  try{
+    var b=rvGetAll(k),id=rvId(p),ex=b.find(function(x){return x._id===id;});
+    if(ex){ex.miss=(ex.miss||0)+1;ex.ok=0;}
+    else{
+      var s={title:p.title,question:p.question,qtype:p.qtype,color:p.color,
+             correct:p.correct,options:p.options,answer:p.answer,answers:p.answers,unit:p.unit,explanation:p.explanation};
+      s._id=id;s.miss=1;s.ok=0;
+      b.push(s);
+    }
+    rvSaveAll(k,b);
+  }catch(e){}
+}
+function rvCorrect(k,p){
+  try{
+    var b=rvGetAll(k),id=rvId(p),i=b.findIndex(function(x){return x._id===id;});
+    if(i<0)return false;
+    b[i].ok=(b[i].ok||0)+1;
+    var g=b[i].ok>=REVIEW_CORRECT_NEEDED;
+    if(g)b.splice(i,1);
+    rvSaveAll(k,b);
+    return g;
+  }catch(e){return false;}
+}
+
+</script>
 <style>
   body { background: #fff7ed; }
   .cursor-blink { color: #f97316; }
@@ -709,6 +742,15 @@ function App() {
   }, []);
   const saveBest = v => { try { localStorage.setItem(STORAGE_KEY, String(v)); } catch(_) {} };
 
+  const startReview = () => {
+    const bank = rvGetAll(QUIZ_KEY);
+    setReviewBank(bank);
+    if(bank.length === 0){ setMode("setup"); return; }
+    setProblems(bank);
+    setCurrent(0); setScore(0); setStreak(0);
+    setChecked(false); setUserAnswer(null); setInputVal(""); setCeleb(false);
+    setMode("review");
+  };
   const startQuiz = () => {
     setProblems(pickProblems(diff, totalQ));
     setCurrent(0); setScore(0); setStreak(0);
@@ -735,14 +777,18 @@ function App() {
       setScore(s => s+1);
       const ns = streak + 1; setStreak(ns);
       if (ns > best) { setBest(ns); saveBest(ns); }
-      setCeleb(true); setTimeout(() => setCeleb(false), 1800);
+      setCeleb(true); setTimeout(() => setCeleb(false), 1800); rvCorrect(QUIZ_KEY, problem); setReviewBank(rvGetAll(QUIZ_KEY));
     } else {
       setStreak(0);
+      rvAdd(QUIZ_KEY, problem);
+      setReviewBank(rvGetAll(QUIZ_KEY));
     }
   };
 
   const nextQuestion = () => {
-    if (current + 1 >= totalQ) { setMode("result"); return; }
+    const _e=current+1>=problems.length;
+    if(_e&&mode==="review"){const b=rvGetAll(QUIZ_KEY);setReviewBank(b);if(b.length>0){startReview();}else{setMode("graduated");}return;}
+    if(_e){setMode("result");return;}
     setCurrent(c => c+1);
     setChecked(false); setUserAnswer(null); setInputVal(""); setCeleb(false);
   };
@@ -757,6 +803,24 @@ function App() {
         <div className="setup-emoji">💡</div>
         <h1 className="setup-title" style={{color:"#9a3412"}}>光の性質 理科クイズ</h1>
         <p className="setup-sub">小学生〜中学入試レベル</p>
+                <div style={{marginBottom:"16px"}}>
+          <button onClick={()=>{if(reviewBank.length>0)startReview();}}
+            style={{width:"100%",padding:"14px 16px",borderRadius:"14px",
+              cursor:reviewBank.length>0?"pointer":"default",
+              border:reviewBank.length>0?"2px solid #ef4444":"2px solid #e5e7eb",
+              background:reviewBank.length>0?"#fef2f2":"#f9fafb",
+              display:"flex",alignItems:"center",justifyContent:"space-between",
+              fontFamily:"inherit",opacity:reviewBank.length===0?0.45:1}}>
+            <div style={{textAlign:"left"}}>
+              <div style={{fontWeight:"900",fontSize:"15px",color:reviewBank.length>0?"#b91c1c":"#374151"}}>📚 復習モード</div>
+              {reviewBank.length>0&&<div style={{fontSize:"11px",color:"#ef4444",marginTop:"2px"}}>タップして今すぐ開始！</div>}
+            </div>
+            <span style={{background:reviewBank.length>0?"#ef4444":"#d1d5db",color:"#fff",borderRadius:"99px",padding:"4px 12px",fontSize:"13px",fontWeight:"bold"}}>
+              {reviewBank.length>0?`${reviewBank.length}問`:"なし"}
+            </span>
+          </button>
+          {reviewBank.length===0&&<div style={{fontSize:"11px",color:"#9ca3af",textAlign:"center",marginTop:"4px"}}>間違えた問題が溜まるとここで復習できます</div>}
+        </div>
         {best > 0 && <div className="best-badge" style={{background:"#ffedd5",border:"1.5px solid #fb923c",color:"#9a3412"}}>🏆 最高連続記録：<strong>{best}問</strong></div>}
 
         <div className="qcount-section">レベルを選ぶ</div>
@@ -799,6 +863,24 @@ function App() {
   );
 
   // ── 結果 ──
+
+  if(mode === "graduated") return (
+    <div className="setup-wrap" style={{background:"#f0fdf4"}}>
+      <div className="setup-card">
+        <div className="setup-emoji">🎓</div>
+        <h2 className="setup-title" style={{color:"#166534"}}>復習バンク卒業！</h2>
+        <p style={{fontSize:"14px",color:"#16a34a",marginBottom:"16px",fontWeight:"bold"}}>
+          すべての問題を5回正解しました！
+        </p>
+        <div style={{background:"#dcfce7",borderRadius:"14px",padding:"16px",marginBottom:"16px",fontSize:"13px",color:"#166534",lineHeight:"1.8"}}>
+          🌟 間違えた問題をすべてマスターしました！
+        </div>
+        <button className="start-btn"
+          style={{background:"linear-gradient(135deg,#4ade80,#22c55e)",color:"#fff",boxShadow:"0 4px 0 #16a34a"}}
+          onClick={()=>setMode("setup")}>もどる</button>
+      </div>
+    </div>
+  );
   if (mode === "result") {
     const pct = Math.round((score/totalQ)*100);
     return (
@@ -817,6 +899,12 @@ function App() {
             <button className="start-btn" style={{background:BTN,color:"#fff",boxShadow:"0 4px 0 #c2410c"}} onClick={startQuiz}>もう一度</button>
             <button className="start-btn" style={{background:"#868e96",color:"#fff",boxShadow:"0 4px 0 #495057"}} onClick={() => setMode("setup")}>設定へ</button>
           </div>
+          {reviewBank.length>0&&(
+            <button className="start-btn"
+              style={{background:"linear-gradient(135deg,#ef4444,#dc2626)",color:"#fff",
+                boxShadow:"0 4px 0 #991b1b",marginTop:"8px",width:"100%"}}
+              onClick={startReview}>続けて復習する 📚 ({reviewBank.length}問)</button>
+          )}
         </div>
       </div>
     );
