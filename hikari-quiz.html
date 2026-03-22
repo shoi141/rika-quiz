@@ -9,39 +9,6 @@
 <script src="https://cdnjs.cloudflare.com/ajax/libs/react-dom/18.2.0/umd/react-dom.production.min.js"></script>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/babel-standalone/7.23.2/babel.min.js"></script>
 <script src="rika-common.js"></script>
-<script>
-const QUIZ_KEY="hikari";
-
-const REVIEW_CORRECT_NEEDED = 5;
-function rvId(p){return((p.title||"")+"|"+(p.question||"")).slice(0,60);}
-function rvGetAll(k){try{var r=localStorage.getItem("rv_"+k);return r?JSON.parse(r):[];}catch(e){return[];}}
-function rvSaveAll(k,b){try{localStorage.setItem("rv_"+k,JSON.stringify(b));}catch(e){}}
-function rvAdd(k,p){
-  try{
-    var b=rvGetAll(k),id=rvId(p),ex=b.find(function(x){return x._id===id;});
-    if(ex){ex.miss=(ex.miss||0)+1;ex.ok=0;}
-    else{
-      var s={title:p.title,question:p.question,qtype:p.qtype,color:p.color,
-             correct:p.correct,options:p.options,answer:p.answer,answers:p.answers,unit:p.unit,explanation:p.explanation};
-      s._id=id;s.miss=1;s.ok=0;
-      b.push(s);
-    }
-    rvSaveAll(k,b);
-  }catch(e){}
-}
-function rvCorrect(k,p){
-  try{
-    var b=rvGetAll(k),id=rvId(p),i=b.findIndex(function(x){return x._id===id;});
-    if(i<0)return false;
-    b[i].ok=(b[i].ok||0)+1;
-    var g=b[i].ok>=REVIEW_CORRECT_NEEDED;
-    if(g)b.splice(i,1);
-    rvSaveAll(k,b);
-    return g;
-  }catch(e){return false;}
-}
-
-</script>
 <style>
   body { background: #fff7ed; }
   .cursor-blink { color: #f97316; }
@@ -136,6 +103,38 @@ function rvCorrect(k,p){
 <body>
 <div id="root"></div>
 <script type="text/babel">
+const QUIZ_KEY = "hikari";
+
+// ── 復習バンク ────────────────────────────────────────────
+const REVIEW_CORRECT_NEEDED = 5;
+const rvId = p => ((p.title||"")+"|"+(p.question||"")).slice(0,60);
+const rvGetAll = k => { try{ const r=localStorage.getItem("rv_"+k); return r?JSON.parse(r):[]; }catch(e){return[];} };
+const rvSaveAll = (k,b) => { try{ localStorage.setItem("rv_"+k,JSON.stringify(b)); }catch(e){} };
+const rvAdd = (k,p) => {
+  try{
+    const b=rvGetAll(k), id=rvId(p), ex=b.find(x=>x._id===id);
+    if(ex){ ex.miss=(ex.miss||0)+1; ex.ok=0; }
+    else{
+      const s={title:p.title,question:p.question,qtype:p.qtype,color:p.color,
+               correct:p.correct,options:p.options,answer:p.answer,answers:p.answers,
+               unit:p.unit,explanation:p.explanation};
+      s._id=id; s.miss=1; s.ok=0; b.push(s);
+    }
+    rvSaveAll(k,b);
+  }catch(e){}
+};
+const rvCorrect = (k,p) => {
+  try{
+    const b=rvGetAll(k), id=rvId(p), i=b.findIndex(x=>x._id===id);
+    if(i<0) return false;
+    b[i].ok=(b[i].ok||0)+1;
+    const g=b[i].ok>=REVIEW_CORRECT_NEEDED;
+    if(g) b.splice(i,1);
+    rvSaveAll(k,b);
+    return g;
+  }catch(e){ return false; }
+};
+
 const { useState, useEffect, useRef } = React;
 const STORAGE_KEY = "hikari_best_streak";
 
