@@ -782,7 +782,7 @@ function App() {
               <div style={{fontWeight:"900",fontSize:"15px",color:reviewBank.length>0?"#b91c1c":"#374151"}}>📚 復習モード</div>
               {reviewBank.length>0&&<div style={{fontSize:"11px",color:"#ef4444",marginTop:"2px"}}>タップして今すぐ開始！</div>}
             </div>
-            <span style={{background:reviewBank.length>0?"#ef4444":"#d1d5db",color:"#fff",borderRadius:"99px",padding:"4px 12px",fontSize:"13px",fontWeight:"bold"}}>{reviewBank.length>0?`${reviewBank.length}問`:"なし"}</span>
+            <span style={{background:reviewBank.length>0?"#ef4444":"#d1d5db",color:"#fff",borderRadius:"99px",padding:"4px 12px",fontSize:"13px",fontWeight:"bold"}}>{reviewBank.length>0?reviewBank.length+"問":"なし"}</span>
           </button>
           {reviewBank.length===0&&<div style={{fontSize:"11px",color:"#9ca3af",textAlign:"center",marginTop:"4px"}}>間違えた問題が溜まるとここで復習できます</div>}
         </div>
