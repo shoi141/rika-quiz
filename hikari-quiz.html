@@ -762,7 +762,7 @@ function App() {
     setChecked(false); setUserAnswer(null); setInputVal(""); setCeleb(false);
   };
 
-  const progress = problem ? (current / Math.max(problems.length,1)) * 100 : 0;
+  const progress = problem ? (current / totalQ) * 100 : 0;
   const BTN = "linear-gradient(135deg,#fb923c,#f97316)";
 
   // ── セットアップ ──
@@ -815,13 +815,27 @@ function App() {
 
   // ── 結果 ──
   if (mode === "result") {
-    const pct = Math.round((score/Math.max(problems.length,1))*100);
+    return (
+      <div className="setup-wrap">
+        <div className="setup-card">
+          <div className="setup-emoji">🎉</div>
+          <h2>おわり！</h2>
+          <p>{score} / {problems.length}</p>
+          <button className="start-btn" onClick={startQuiz}>もう一度</button>
+          <button className="start-btn" onClick={()=>setMode("setup")}>設定へ</button>
+          {reviewBank.length>0&&<button className="start-btn" onClick={startReview}>復習する</button>}
+        </div>
+      </div>
+    );
+  }
+  if (false) {
+    const pct = Math.round((score/totalQ)*100);
     return (
       <div className="setup-wrap" style={{background:"#fff7ed"}}>
         <div className="setup-card">
           <div className="setup-emoji">{pct===100?"🏆":pct>=70?"🎉":"💪"}</div>
           <h2 className="setup-title" style={{color:"#9a3412"}}>おわり！</h2>
-          <p className="result-score">{problems.length}問中 <span className="result-big" style={{color:"#f97316"}}>{score}</span> 問正解</p>
+          <p className="result-score">{totalQ}問中 <span className="result-big" style={{color:"#f97316"}}>{score}</span> 問正解</p>
           <div className="pct-bar-bg" style={{background:"#ffedd5"}}><div className="pct-bar-fill" style={{background:BTN, width:`${pct}%`}}/></div>
           <p className="pct-text">{pct}%</p>
           <div className="streak-result-row">
@@ -832,9 +846,6 @@ function App() {
             <button className="start-btn" style={{background:BTN,color:"#fff",boxShadow:"0 4px 0 #c2410c"}} onClick={startQuiz}>もう一度</button>
             <button className="start-btn" style={{background:"#868e96",color:"#fff",boxShadow:"0 4px 0 #495057"}} onClick={() => setMode("setup")}>設定へ</button>
           </div>
-          {reviewBank.length>0&&(
-            <button className="start-btn" style={{background:"linear-gradient(135deg,#ef4444,#dc2626)",color:"#fff",boxShadow:"0 4px 0 #991b1b",marginTop:"8px",width:"100%"}} onClick={startReview}>continue review</button>
-          )}
         </div>
       </div>
     );
@@ -860,7 +871,7 @@ function App() {
       {/* ヘッダー */}
       <div className="quiz-header">
         <div className="header-left">
-          <span className="q-label">Q{current+1}<span className="q-total">/{problems.length}</span></span>
+          <span className="q-label">Q{current+1}<span className="q-total">/{totalQ}</span></span>
           <span className="type-tag" style={{background:problem.color}}>{problem.title}</span>
           <span className={`diff-badge ${problem.diff === "nyushi" ? "diff-nyushi" : "diff-shogaku"}`}>
             {problem.diff === "nyushi" ? "入試" : "小学"}
@@ -914,7 +925,7 @@ function App() {
           <button className="next-btn"
             style={{background:"linear-gradient(135deg,#51cf66,#20c997)",color:"#fff",boxShadow:"0 4px 0 #2f9e44"}}
             onClick={nextQuestion}>
-            {current+1 >= problems.length ? "結果を見る 🎉" : "つぎへ →"}
+            {current+1 >= totalQ ? "結果を見る 🎉" : "つぎへ →"}
           </button>
         </>
       )}
