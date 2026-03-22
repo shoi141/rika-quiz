@@ -736,9 +736,10 @@ function App() {
       setScore(s => s+1);
       const ns = streak + 1; setStreak(ns);
       if (ns > best) { setBest(ns); saveBest(ns); }
-      setCeleb(true); setTimeout(() => setCeleb(false), 1800);
+      setCeleb(true); setTimeout(() => setCeleb(false), 1800); try{const b=JSON.parse(localStorage.getItem('rv_hikari')||'[]');const id=(problem.title||'')+'|'+(problem.question||'');const i=b.findIndex(x=>x._id===id);if(i>=0){b[i].ok=(b[i].ok||0)+1;if(b[i].ok>=5)b.splice(i,1);localStorage.setItem('rv_hikari',JSON.stringify(b));}setReviewBank(b);}catch(e){}
     } else {
       setStreak(0);
+      try{const b=JSON.parse(localStorage.getItem('rv_hikari')||'[]');const id=(problem.title||'')+'|'+(problem.question||'');if(!b.find(x=>x._id===id)){b.push({...problem,_id:id,ok:0});localStorage.setItem('rv_hikari',JSON.stringify(b));}setReviewBank(b);}catch(e){}
     }
   };
 
