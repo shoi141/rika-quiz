@@ -9,7 +9,104 @@
 <script src="https://cdnjs.cloudflare.com/ajax/libs/react-dom/18.2.0/umd/react-dom.production.min.js"></script>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/babel-standalone/7.23.2/babel.min.js"></script>
 <script src="rika-common.js"></script>
-<script>
+<style>
+  body { background: #fff7ed; }
+  .cursor-blink { color: #f97316; }
+
+  /* 理科クイズ専用スタイル */
+  .rika-root {
+    min-height: 100vh; background: #fff7ed;
+    padding: 12px; max-width: 480px; margin: 0 auto;
+    display: flex; flex-direction: column; gap: 10px;
+  }
+
+  /* ○× ボタン */
+  .ox-row { display: flex; gap: 12px; }
+  .ox-btn {
+    flex: 1; height: 80px; border: none; border-radius: 20px;
+    font-size: 40px; font-weight: 900; cursor: pointer;
+    transition: transform 0.08s; box-shadow: 0 4px 0 rgba(0,0,0,0.2);
+  }
+  .ox-btn:active { transform: translateY(3px); box-shadow: 0 1px 0 rgba(0,0,0,0.2); }
+  .ox-btn.maru { background: linear-gradient(135deg,#ff6b6b,#ee5a24); color:#fff; }
+  .ox-btn.batsu { background: linear-gradient(135deg,#4a90d9,#0652DD); color:#fff; }
+  .ox-btn.selected-correct { background: #2ecc71; box-shadow: 0 4px 0 #27ae60; }
+  .ox-btn.selected-wrong   { background: #e74c3c; box-shadow: 0 4px 0 #c0392b; opacity:0.6; }
+
+  /* 選択肢ボタン */
+  .select-grid { display: flex; flex-direction: column; gap: 8px; }
+  .select-btn {
+    width: 100%; padding: 14px 16px; border: 2px solid #e5e7eb;
+    border-radius: 14px; background: #fff; cursor: pointer;
+    font-size: 14px; font-weight: bold; text-align: left;
+    transition: all 0.1s; font-family: inherit;
+    box-shadow: 0 2px 0 #e5e7eb;
+  }
+  .select-btn:active { transform: translateY(1px); }
+  .select-btn.correct { background: #d1fae5; border-color: #10b981; color: #065f46; box-shadow: 0 2px 0 #10b981; }
+  .select-btn.wrong   { background: #fee2e2; border-color: #ef4444; color: #991b1b; opacity:0.7; }
+  .select-btn.show-correct { background: #d1fae5; border-color: #10b981; color: #065f46; }
+  .select-btn.disabled { cursor: default; }
+
+  /* テキスト入力 */
+  .input-area {
+    background: #fff; border: 2px solid #e5e7eb; border-radius: 14px;
+    padding: 12px 14px; display: flex; flex-direction: column; gap: 8px;
+  }
+  .input-area.focused { border-color: #f97316; box-shadow: 0 0 0 3px rgba(249,115,22,0.15); }
+  .input-area.correct { border-color: #10b981; background: #d1fae5; }
+  .input-area.wrong   { border-color: #ef4444; background: #fee2e2; }
+  .input-label { font-size: 11px; font-weight: bold; color: #9ca3af; text-transform: uppercase; letter-spacing: 0.05em; }
+  .input-field {
+    width: 100%; border: none; outline: none; font-size: 18px;
+    font-weight: bold; background: transparent; font-family: inherit;
+    color: #1f2937;
+  }
+  .input-field::placeholder { color: #d1d5db; font-weight: normal; }
+  .correct-ans-hint { font-size: 13px; color: #065f46; font-weight: bold; }
+
+  /* 計算キーパッド */
+  .calc-keypad { background: #fde8d0; border-radius: 18px; padding: 10px; display: flex; flex-direction: column; gap: 6px; }
+
+  /* 解説カード */
+  .explanation-card {
+    background: #fef3c7; border: 1.5px solid #f59e0b;
+    border-radius: 12px; padding: 12px 14px; font-size: 13px;
+    color: #78350f; line-height: 1.8;
+  }
+  .explanation-label { font-weight: 900; margin-bottom: 4px; font-size: 12px; color: #92400e; }
+
+  /* 難易度バッジ */
+  .diff-badge {
+    font-size: 10px; font-weight: bold; padding: 2px 8px;
+    border-radius: 99px; margin-left: 6px;
+  }
+  .diff-shogaku { background: #dcfce7; color: #166534; }
+  .diff-nyushi  { background: #fef3c7; color: #92400e; }
+
+  /* 結果画面の正解率バー */
+  .result-detail { display:flex; flex-direction:column; gap:6px; margin:12px 0; }
+  .result-row    { display:flex; justify-content:space-between; font-size:13px; }
+
+  /* 難易度選択 */
+  .diff-btn-row { display:flex; flex-direction:column; gap:8px; margin-bottom:20px; }
+  .diff-card-btn {
+    display:flex; align-items:center; gap:12px;
+    padding:12px 16px; border-radius:14px; cursor:pointer;
+    text-align:left; border:2px solid transparent;
+  }
+  .diff-card-btn .diff-emoji { font-size:24px; flex-shrink:0; }
+  .diff-card-btn .diff-name  { font-weight:900; font-size:15px; }
+  .diff-card-btn .diff-desc  { font-size:11px; color:#6b7280; margin-top:2px; }
+</style>
+</head>
+<body>
+<div id="root"></div>
+<script type="text/babel">
+const { useState, useEffect, useRef } = React;
+const STORAGE_KEY = "hikari_best_streak";
+
+// ─── KEYPAD（計算問題用）───────────────────────────────────
 const CALC_KEYPAD = [
   [{label:"7",val:"7"},{label:"8",val:"8"},{label:"9",val:"9"},{label:".",val:"."}],
   [{label:"4",val:"4"},{label:"5",val:"5"},{label:"6",val:"6"},{label:"×",val:"×"}],
@@ -464,106 +561,6 @@ function pickProblems(diff, total) {
   return result;
 }
 
-</script>
-<style>
-  body { background: #fff7ed; }
-  .cursor-blink { color: #f97316; }
-
-  /* 理科クイズ専用スタイル */
-  .rika-root {
-    min-height: 100vh; background: #fff7ed;
-    padding: 12px; max-width: 480px; margin: 0 auto;
-    display: flex; flex-direction: column; gap: 10px;
-  }
-
-  /* ○× ボタン */
-  .ox-row { display: flex; gap: 12px; }
-  .ox-btn {
-    flex: 1; height: 80px; border: none; border-radius: 20px;
-    font-size: 40px; font-weight: 900; cursor: pointer;
-    transition: transform 0.08s; box-shadow: 0 4px 0 rgba(0,0,0,0.2);
-  }
-  .ox-btn:active { transform: translateY(3px); box-shadow: 0 1px 0 rgba(0,0,0,0.2); }
-  .ox-btn.maru { background: linear-gradient(135deg,#ff6b6b,#ee5a24); color:#fff; }
-  .ox-btn.batsu { background: linear-gradient(135deg,#4a90d9,#0652DD); color:#fff; }
-  .ox-btn.selected-correct { background: #2ecc71; box-shadow: 0 4px 0 #27ae60; }
-  .ox-btn.selected-wrong   { background: #e74c3c; box-shadow: 0 4px 0 #c0392b; opacity:0.6; }
-
-  /* 選択肢ボタン */
-  .select-grid { display: flex; flex-direction: column; gap: 8px; }
-  .select-btn {
-    width: 100%; padding: 14px 16px; border: 2px solid #e5e7eb;
-    border-radius: 14px; background: #fff; cursor: pointer;
-    font-size: 14px; font-weight: bold; text-align: left;
-    transition: all 0.1s; font-family: inherit;
-    box-shadow: 0 2px 0 #e5e7eb;
-  }
-  .select-btn:active { transform: translateY(1px); }
-  .select-btn.correct { background: #d1fae5; border-color: #10b981; color: #065f46; box-shadow: 0 2px 0 #10b981; }
-  .select-btn.wrong   { background: #fee2e2; border-color: #ef4444; color: #991b1b; opacity:0.7; }
-  .select-btn.show-correct { background: #d1fae5; border-color: #10b981; color: #065f46; }
-  .select-btn.disabled { cursor: default; }
-
-  /* テキスト入力 */
-  .input-area {
-    background: #fff; border: 2px solid #e5e7eb; border-radius: 14px;
-    padding: 12px 14px; display: flex; flex-direction: column; gap: 8px;
-  }
-  .input-area.focused { border-color: #f97316; box-shadow: 0 0 0 3px rgba(249,115,22,0.15); }
-  .input-area.correct { border-color: #10b981; background: #d1fae5; }
-  .input-area.wrong   { border-color: #ef4444; background: #fee2e2; }
-  .input-label { font-size: 11px; font-weight: bold; color: #9ca3af; text-transform: uppercase; letter-spacing: 0.05em; }
-  .input-field {
-    width: 100%; border: none; outline: none; font-size: 18px;
-    font-weight: bold; background: transparent; font-family: inherit;
-    color: #1f2937;
-  }
-  .input-field::placeholder { color: #d1d5db; font-weight: normal; }
-  .correct-ans-hint { font-size: 13px; color: #065f46; font-weight: bold; }
-
-  /* 計算キーパッド */
-  .calc-keypad { background: #fde8d0; border-radius: 18px; padding: 10px; display: flex; flex-direction: column; gap: 6px; }
-
-  /* 解説カード */
-  .explanation-card {
-    background: #fef3c7; border: 1.5px solid #f59e0b;
-    border-radius: 12px; padding: 12px 14px; font-size: 13px;
-    color: #78350f; line-height: 1.8;
-  }
-  .explanation-label { font-weight: 900; margin-bottom: 4px; font-size: 12px; color: #92400e; }
-
-  /* 難易度バッジ */
-  .diff-badge {
-    font-size: 10px; font-weight: bold; padding: 2px 8px;
-    border-radius: 99px; margin-left: 6px;
-  }
-  .diff-shogaku { background: #dcfce7; color: #166534; }
-  .diff-nyushi  { background: #fef3c7; color: #92400e; }
-
-  /* 結果画面の正解率バー */
-  .result-detail { display:flex; flex-direction:column; gap:6px; margin:12px 0; }
-  .result-row    { display:flex; justify-content:space-between; font-size:13px; }
-
-  /* 難易度選択 */
-  .diff-btn-row { display:flex; flex-direction:column; gap:8px; margin-bottom:20px; }
-  .diff-card-btn {
-    display:flex; align-items:center; gap:12px;
-    padding:12px 16px; border-radius:14px; cursor:pointer;
-    text-align:left; border:2px solid transparent;
-  }
-  .diff-card-btn .diff-emoji { font-size:24px; flex-shrink:0; }
-  .diff-card-btn .diff-name  { font-weight:900; font-size:15px; }
-  .diff-card-btn .diff-desc  { font-size:11px; color:#6b7280; margin-top:2px; }
-</style>
-</head>
-<body>
-<div id="root"></div>
-<script type="text/babel">
-const QUIZ_KEY = "hikari";
-const { useState, useEffect, useRef } = React;
-const STORAGE_KEY = "hikari_best_streak";
-
-// ─── KEYPAD（計算問題用）───────────────────────────────────
 // ─── 問題UIコンポーネント ──────────────────────────────────
 
 function OXAnswer({ problem, checked, userAnswer, onAnswer }) {
@@ -712,15 +709,6 @@ function App() {
   }, []);
   const saveBest = v => { try { localStorage.setItem(STORAGE_KEY, String(v)); } catch(_) {} };
 
-  const startReview = () => {
-    const b = JSON.parse(localStorage.getItem('rv_hikari')||'[]');
-    setReviewBank(b);
-    if(b.length === 0){ setMode("setup"); return; }
-    setProblems(b);
-    setCurrent(0); setScore(0); setStreak(0);
-    setChecked(false); setUserAnswer(null); setInputVal(""); setCeleb(false);
-    setMode("review");
-  };
   const startQuiz = () => {
     setProblems(pickProblems(diff, totalQ));
     setCurrent(0); setScore(0); setStreak(0);
@@ -747,17 +735,14 @@ function App() {
       setScore(s => s+1);
       const ns = streak + 1; setStreak(ns);
       if (ns > best) { setBest(ns); saveBest(ns); }
-      setCeleb(true); setTimeout(() => setCeleb(false), 1800); try{const b=JSON.parse(localStorage.getItem('rv_hikari')||'[]');const id=(problem.title||'')+'|'+(problem.question||'');const i=b.findIndex(x=>x._id===id);if(i>=0){b[i].ok=(b[i].ok||0)+1;if(b[i].ok>=5)b.splice(i,1);localStorage.setItem('rv_hikari',JSON.stringify(b));}setReviewBank(b);}catch(e){}
+      setCeleb(true); setTimeout(() => setCeleb(false), 1800);
     } else {
       setStreak(0);
-      try{const b=JSON.parse(localStorage.getItem('rv_hikari')||'[]');const id=(problem.title||'')+'|'+(problem.question||'');if(!b.find(x=>x._id===id)){b.push({...problem,_id:id,ok:0});localStorage.setItem('rv_hikari',JSON.stringify(b));}setReviewBank(b);}catch(e){}
     }
   };
 
   const nextQuestion = () => {
-    const _e = current+1>=problems.length;
-    if(_e&&mode==="review"){const b=JSON.parse(localStorage.getItem('rv_hikari')||'[]');setReviewBank(b);if(b.length>0){startReview();}else{setMode("setup");}return;}
-    if(_e){setMode("result");return;}
+    if (current + 1 >= totalQ) { setMode("result"); return; }
     setCurrent(c => c+1);
     setChecked(false); setUserAnswer(null); setInputVal(""); setCeleb(false);
   };
@@ -815,19 +800,28 @@ function App() {
 
   // ── 結果 ──
   if (mode === "result") {
+    const pct = Math.round((score/totalQ)*100);
     return (
-      <div className="setup-wrap">
+      <div className="setup-wrap" style={{background:"#fff7ed"}}>
         <div className="setup-card">
-          <div className="setup-emoji">🎉</div>
-          <h2>おわり！</h2>
-          <p>{score} / {problems.length}</p>
-          <button className="start-btn" onClick={startQuiz}>もう一度</button>
-          <button className="start-btn" onClick={()=>setMode("setup")}>設定へ</button>
-          {reviewBank.length>0&&<button className="start-btn" onClick={startReview}>復習する</button>}
+          <div className="setup-emoji">{pct===100?"🏆":pct>=70?"🎉":"💪"}</div>
+          <h2 className="setup-title" style={{color:"#9a3412"}}>おわり！</h2>
+          <p className="result-score">{totalQ}問中 <span className="result-big" style={{color:"#f97316"}}>{score}</span> 問正解</p>
+          <div className="pct-bar-bg" style={{background:"#ffedd5"}}><div className="pct-bar-fill" style={{background:BTN, width:`${pct}%`}}/></div>
+          <p className="pct-text">{pct}%</p>
+          <div className="streak-result-row">
+            <div className="streak-result-box"><div className="streak-result-label">この回の最高連続</div><div className="streak-result-val" style={{color:"#ef4444"}}>🔥 {streak}問</div></div>
+            <div className="streak-result-box"><div className="streak-result-label">歴代最高連続</div><div className="streak-result-val" style={{color:"#f59f00"}}>🏆 {best}問</div></div>
+          </div>
+          <div style={{display:"flex",gap:"8px",marginTop:"16px"}}>
+            <button className="start-btn" style={{background:BTN,color:"#fff",boxShadow:"0 4px 0 #c2410c"}} onClick={startQuiz}>もう一度</button>
+            <button className="start-btn" style={{background:"#868e96",color:"#fff",boxShadow:"0 4px 0 #495057"}} onClick={() => setMode("setup")}>設定へ</button>
+          </div>
         </div>
       </div>
     );
   }
+
   if (!problem) return null;
 
   // ── クイズ画面 ──

@@ -78,7 +78,6 @@
 <body>
 <div id="root"></div>
 <script type="text/babel">
-const QUIZ_KEY = "oto";
 const { useState, useEffect, useRef } = React;
 const STORAGE_KEY = "oto_best_streak";
 
@@ -319,23 +318,12 @@ function App() {
   const [inputVal,setInputVal]   = useState("");
   const [celeb,setCeleb]         = useState(false);
   const [isCorrect,setIsCorrect] = useState(false);
-  const [reviewBank,setReviewBank] = useState([]);
 
   useEffect(() => {
     try { const s=localStorage.getItem(STORAGE_KEY); if(s) setBest(parseInt(s)||0); } catch(_) {}
-    setReviewBank(JSON.parse(localStorage.getItem('rv_oto')||'[]'));
   }, []);
   const saveBest = v => { try { localStorage.setItem(STORAGE_KEY,String(v)); } catch(_) {} };
 
-  const startReview = () => {
-    const b = JSON.parse(localStorage.getItem('rv_oto')||'[]');
-    setReviewBank(b);
-    if(b.length === 0){ setMode("setup"); return; }
-    setProblems(b);
-    setCurrent(0); setScore(0); setStreak(0);
-    setChecked(false); setUserAnswer(null); setInputVal(""); setCeleb(false);
-    setMode("review");
-  };
   const startQuiz = () => {
     setProblems(pickProblems(diff, totalQ));
     setCurrent(0); setScore(0); setStreak(0);
@@ -358,19 +346,12 @@ function App() {
     if (ok) {
       setScore(s=>s+1); const ns=streak+1; setStreak(ns);
       if (ns>best) { setBest(ns); saveBest(ns); }
-      setCeleb(true); setTimeout(()=>setCeleb(false),1800); try{const b=JSON.parse(localStorage.getItem('rv_oto')||'[]');const id=(problem.title||'')+'|'+(problem.question||'');const i=b.findIndex(x=>x._id===id);if(i>=0){b[i].ok=(b[i].ok||0)+1;if(b[i].ok>=5)b.splice(i,1);localStorage.setItem('rv_oto',JSON.stringify(b));}setReviewBank(b);}catch(e){}
-    } else { setStreak(0); try{const b=JSON.parse(localStorage.getItem('rv_oto')||'[]');const id=(problem.title||'')+'|'+(problem.question||'');if(!b.find(x=>x._id===id)){b.push({...problem,_id:id,ok:0});localStorage.setItem('rv_oto',JSON.stringify(b));}setReviewBank(b);}catch(e){} }
+      setCeleb(true); setTimeout(()=>setCeleb(false),1800);
+    } else { setStreak(0); }
   };
 
   const nextQuestion = () => {
-    const _e = current+1>=problems.length;
-    if(_e && mode==="review"){
-      const b=JSON.parse(localStorage.getItem('rv_oto')||'[]');
-      setReviewBank(b);
-      if(b.length>0){startReview();}else{setMode("graduated");}
-      return;
-    }
-    if(_e){ setMode("result"); return; }
+    if (current+1>=totalQ) { setMode("result"); return; }
     setCurrent(c=>c+1);
     setChecked(false); setUserAnswer(null); setInputVal(""); setCeleb(false);
   };
@@ -384,24 +365,6 @@ function App() {
         <div className="setup-emoji">🔊</div>
         <h1 className="setup-title" style={{color:"#1e3a8a"}}>音の性質 理科クイズ</h1>
         <p className="setup-sub">小学生〜中学入試レベル</p>
-                <div style={{marginBottom:"16px"}}>
-          <button onClick={()=>{if(reviewBank.length>0)startReview();}}
-            style={{width:"100%",padding:"14px 16px",borderRadius:"14px",
-              cursor:reviewBank.length>0?"pointer":"default",
-              border:reviewBank.length>0?"2px solid #ef4444":"2px solid #e5e7eb",
-              background:reviewBank.length>0?"#fef2f2":"#f9fafb",
-              display:"flex",alignItems:"center",justifyContent:"space-between",
-              fontFamily:"inherit",opacity:reviewBank.length===0?0.45:1}}>
-            <div style={{textAlign:"left"}}>
-              <div style={{fontWeight:"900",fontSize:"15px",color:reviewBank.length>0?"#b91c1c":"#374151"}}>📚 復習モード</div>
-              {reviewBank.length>0&&<div style={{fontSize:"11px",color:"#ef4444",marginTop:"2px"}}>タップして今すぐ開始！</div>}
-            </div>
-            <span style={{background:reviewBank.length>0?"#ef4444":"#d1d5db",color:"#fff",borderRadius:"99px",padding:"4px 12px",fontSize:"13px",fontWeight:"bold"}}>
-              {reviewBank.length>0?`${reviewBank.length}問`:"なし"}
-            </span>
-          </button>
-          {reviewBank.length===0&&<div style={{fontSize:"11px",color:"#9ca3af",textAlign:"center",marginTop:"4px"}}>間違えた問題が溜まるとここで復習できます</div>}
-        </div>
         {best>0 && <div className="best-badge" style={{background:"#dbeafe",border:"1.5px solid #60a5fa",color:"#1e3a8a"}}>🏆 最高連続記録：<strong>{best}問</strong></div>}
         <div className="qcount-section">レベルを選ぶ</div>
         <div className="diff-btn-row">
@@ -517,7 +480,7 @@ function App() {
           <button className="next-btn"
             style={{background:"linear-gradient(135deg,#51cf66,#20c997)",color:"#fff",boxShadow:"0 4px 0 #2f9e44"}}
             onClick={nextQuestion}>
-            {current+1>=problems.length?(mode==="review"?(JSON.parse(localStorage.getItem("rv_oto")||"[]").length>0?"続きへ 🔁":"卒業！ 🎓"):"結果を見る 🎉"):"つぎへ →"}
+            {current+1>=totalQ?"結果を見る 🎉":"つぎへ →"}
           </button>
         </>
       )}
