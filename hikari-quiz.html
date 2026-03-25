@@ -754,6 +754,11 @@ function App() {
   if (mode === "setup") return (
     <div className="setup-wrap" style={{background:"#fff7ed"}}>
       <div className="setup-card">
+                <div style={{textAlign:"center",marginBottom:"12px",fontSize:"12px"}}>
+          <a href="https://shoi141.github.io/rika-quiz/" style={{color:"#adb5bd",textDecoration:"none"}}>← 理科トップ</a>
+          {"　|　"}
+          <a href="https://shoi141.github.io/quiz-portal/" style={{color:"#adb5bd",textDecoration:"none"}}>🏠 教科トップ</a>
+        </div>
         <div className="setup-emoji">💡</div>
         <h1 className="setup-title" style={{color:"#9a3412"}}>光の性質 理科クイズ</h1>
         <p className="setup-sub">小学生〜中学入試レベル</p>
@@ -794,11 +799,6 @@ function App() {
         </div>
         <button className="start-btn" style={{background:BTN, color:"#fff", boxShadow:"0 4px 0 #c2410c"}}
           onClick={startQuiz}>スタート！ 🚀</button>
-        <div style={{textAlign:"center",marginTop:"16px",fontSize:"12px"}}>
-          <a href="https://shoi141.github.io/rika-quiz/" style={{color:"#adb5bd",textDecoration:"none"}}>← 理科トップ</a>
-          {"　|　"}
-          <a href="https://shoi141.github.io/quiz-portal/" style={{color:"#adb5bd",textDecoration:"none"}}>🏠 教科トップ</a>
-        </div>
       </div>
     </div>
   );
