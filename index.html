@@ -54,6 +54,18 @@
   .c-oto    { border-left-color:#3b82f6; }
   .c-oto    .card-icon  { background:#eff6ff; }
   .c-oto    .card-title { color:#1e3a8a; }
+  /* 人体 */
+  .c-jintai { border-left-color:#dc2626; }
+  .c-jintai .card-icon  { background:#fef2f2; }
+  .c-jintai .card-title { color:#991b1b; }
+  /* 植物 */
+  .c-shokubutsu { border-left-color:#16a34a; }
+  .c-shokubutsu .card-icon  { background:#f0fdf4; }
+  .c-shokubutsu .card-title { color:#14532d; }
+  /* 電気 */
+  .c-denki { border-left-color:#2563eb; }
+  .c-denki .card-icon  { background:#eff6ff; }
+  .c-denki .card-title { color:#1e3a8a; }
   /* 準備中 */
   .card-coming { border-left-color:#e2e8f0; opacity:0.5; pointer-events:none; }
   .card-coming .card-icon  { background:#f8fafc; }
@@ -111,32 +123,54 @@
 
 </div>
 
-<div class="section-label">🌿 生き物・植物（準備中）</div>
+<div class="section-label">🌿 生き物・植物</div>
 <div class="grid">
-  <div class="card card-coming" style="animation-delay:0.2s">
-    <div class="card-icon">🌱</div>
-    <div class="card-body"><div class="card-title">植物のつくり（準備中）</div><div class="card-desc">もうすぐ追加予定！</div></div>
+
+  <a href="rika-quiz.html#shokubutsu" class="card c-shokubutsu" style="animation-delay:0.2s" onclick="localStorage.setItem('rika_start_diff','shokubutsu')">
+    <div class="card-icon">🌿</div>
+    <div class="card-body">
+      <div class="card-title">植物のつくり</div>
+      <div class="card-desc">光合成・蒸散・道管・師管・受粉・分類</div>
+      <div><span class="card-badge badge-nyushi">中学入試</span></div>
+    </div>
     <div class="card-arrow">›</div>
-  </div>
-  <div class="card card-coming" style="animation-delay:0.25s">
-    <div class="card-icon">🦋</div>
-    <div class="card-body"><div class="card-title">昆虫・動物（準備中）</div><div class="card-desc">もうすぐ追加予定！</div></div>
+  </a>
+
+  <a href="rika-quiz.html#jintai" class="card c-jintai" style="animation-delay:0.25s" onclick="localStorage.setItem('rika_start_diff','jintai')">
+    <div class="card-icon">🫀</div>
+    <div class="card-body">
+      <div class="card-title">人体</div>
+      <div class="card-desc">消化・循環・神経・骨・筋肉・排出</div>
+      <div><span class="card-badge badge-nyushi">中学入試</span></div>
+    </div>
     <div class="card-arrow">›</div>
-  </div>
+  </a>
+
 </div>
 
-<div class="section-label">🌡️ 物質・エネルギー（準備中）</div>
+<div class="section-label">⚡ 物質・エネルギー</div>
 <div class="grid">
-  <div class="card card-coming" style="animation-delay:0.3s">
-    <div class="card-icon">🌡️</div>
-    <div class="card-body"><div class="card-title">熱のはたらき（準備中）</div><div class="card-desc">もうすぐ追加予定！</div></div>
-    <div class="card-arrow">›</div>
-  </div>
-  <div class="card card-coming" style="animation-delay:0.35s">
+
+  <a href="rika-quiz.html#denki" class="card c-denki" style="animation-delay:0.3s" onclick="localStorage.setItem('rika_start_diff','denki')">
     <div class="card-icon">⚡</div>
-    <div class="card-body"><div class="card-title">電気のはたらき（準備中）</div><div class="card-desc">もうすぐ追加予定！</div></div>
+    <div class="card-body">
+      <div class="card-title">電気のはたらき</div>
+      <div class="card-desc">オームの法則・直列並列回路・電磁誘導・モーター</div>
+      <div><span class="card-badge badge-nyushi">中学入試</span></div>
+    </div>
     <div class="card-arrow">›</div>
-  </div>
+  </a>
+
+  <a href="rika-quiz.html" class="card c-hikari" style="animation-delay:0.35s;border-left-color:#8b5cf6" onclick="localStorage.setItem('rika_start_diff','mix')">
+    <div class="card-icon" style="background:#f5f3ff">🔬</div>
+    <div class="card-body">
+      <div class="card-title" style="color:#4c1d95">理科ミックス</div>
+      <div class="card-desc">人体・植物・電気・光・音の全分野ミックス</div>
+      <div><span class="card-badge badge-nyushi">中学入試</span></div>
+    </div>
+    <div class="card-arrow">›</div>
+  </a>
+
 </div>
 
 <div class="footer">問題はランダム出題・○×・選択・記述・計算の4形式 🔬</div>

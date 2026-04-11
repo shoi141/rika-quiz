@@ -1,0 +1,271 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+<title>理科クイズ</title>
+<link rel="stylesheet" href="common.css">
+<script src="https://cdnjs.cloudflare.com/ajax/libs/react/18.2.0/umd/react.production.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/react-dom/18.2.0/umd/react-dom.production.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/babel-standalone/7.23.2/babel.min.js"></script>
+<style>
+body{background:#f0fdf4;}
+.rika-root{min-height:100vh;background:#f0fdf4;padding:12px;max-width:480px;margin:0 auto;display:flex;flex-direction:column;gap:10px;}
+.select-grid{display:flex;flex-direction:column;gap:8px;}
+.select-btn{width:100%;padding:13px 16px;border:2px solid #e5e7eb;border-radius:14px;background:#fff;cursor:pointer;font-size:14px;font-weight:bold;text-align:left;font-family:inherit;}
+.select-btn.show-correct{background:#d1fae5;border-color:#10b981;color:#065f46;}
+.select-btn.wrong{background:#fee2e2;border-color:#ef4444;color:#991b1b;opacity:0.7;}
+.explanation-card{background:#fef3c7;border:1.5px solid #f59e0b;border-radius:12px;padding:12px 14px;font-size:13px;color:#78350f;line-height:1.9;}
+.diff-btn-row{display:flex;flex-direction:column;gap:8px;margin-bottom:20px;}
+.diff-card-btn{display:flex;align-items:center;gap:12px;padding:12px 16px;border-radius:14px;cursor:pointer;text-align:left;border:2px solid transparent;font-family:inherit;background:#f9fafb;}
+.diff-card-btn .diff-name{font-weight:900;font-size:15px;}
+.diff-card-btn .diff-desc{font-size:11px;color:#6b7280;margin-top:2px;}
+</style>
+</head>
+<body>
+<div id="root"></div>
+<script>
+function randInt(min,max){return Math.floor(Math.random()*(max-min+1))+min;}
+function randomStars(n){return Array.from({length:n},()=>["⭐","🌟","✨"][randInt(0,2)]).join(" ");}
+function shuffle(arr){const a=[...arr];for(let i=a.length-1;i>0;i--){const j=Math.floor(Math.random()*(i+1));[a[i],a[j]]=[a[j],a[i]];}return a;}
+const JINTAI_BANK = [
+  ["食べ物を消化してエネルギーに変える器官を何という？","消化器官",["循環器官","呼吸器官","神経系"],"口・食道・胃・小腸・大腸・肛門を合わせて消化器官という。"],
+  ["胃液に含まれ、タンパク質を分解する消化酵素は？","ペプシン",["アミラーゼ","リパーゼ","マルターゼ"],"胃液にはペプシンが含まれ、タンパク質を分解する。胃酸（塩酸）も含む。"],
+  ["だ液に含まれ、デンプンを分解する消化酵素は？","アミラーゼ",["ペプシン","リパーゼ","トリプシン"],"だ液中のアミラーゼがデンプンを麦芽糖（マルトース）に分解する。"],
+  ["すい臓から分泌され、3大栄養素すべてを分解できる消化液は？","すい液",["胆汁","胃液","腸液"],"すい液にはアミラーゼ・トリプシン・リパーゼが含まれ、デンプン・タンパク質・脂肪をすべて分解できる。"],
+  ["脂肪の消化を助けるが、消化酵素を含まない消化液は？","胆汁",["すい液","胃液","腸液"],"胆汁は肝臓で作られ、胆のうに蓄えられる。消化酵素は含まないが、脂肪を乳化して消化しやすくする。"],
+  ["栄養分を最も多く吸収する器官は？","小腸",["大腸","胃","十二指腸"],"小腸の内側には柔毛があり、表面積を広げて栄養分を効率よく吸収する。"],
+  ["小腸の内側にある、栄養分を吸収する突起の名前は？","柔毛",["絨毛","繊毛","乳頭"],"柔毛（じゅうもう）は小腸の内壁にある細かい突起で、表面積を大きくして吸収効率を高める。"],
+  ["血液を全身に送り出すポンプの役割をする器官は？","心臓",["肺","肝臓","腎臓"],"心臓は筋肉でできた器官で、収縮・弛緩をくり返して血液を全身に循環させる。"],
+  ["肺から心臓に戻る血液（酸素を多く含む）が流れる血管は？","肺静脈",["肺動脈","大動脈","大静脈"],"肺静脈は肺から左心房に戻る血管。酸素を多く含む動脈血が流れる（静脈だが動脈血）。"],
+  ["酸素を運ぶ赤血球に含まれる赤い物質は？","ヘモグロビン",["コラーゲン","フィブリン","グリコーゲン"],"ヘモグロビンは鉄を含む赤いタンパク質で、酸素と結びついて全身に酸素を運ぶ。"],
+  ["血液の成分のうち、出血したときに血を固める働きをするのは？","血小板",["赤血球","白血球","血しょう"],"血小板は血液を固める（止血する）働きをする。白血球は細菌をやっつける免疫の役割。"],
+  ["不要な老廃物（尿素など）をこしとって尿をつくる器官は？","腎臓",["肝臓","膀胱","すい臓"],"腎臓は血液中の老廃物（尿素・余分な塩分・水分）をこしとって尿をつくる。"],
+  ["アンモニアを害の少ない尿素に変える器官は？","肝臓",["腎臓","すい臓","脾臓"],"肝臓はアンモニアを尿素に変える解毒作用のほか、胆汁の生成・グリコーゲンの貯蔵なども行う。"],
+  ["ヒトの呼吸で、酸素と二酸化炭素のガス交換が行われる場所は？","肺胞",["気管","気管支","胸腔"],"肺胞は肺の中の小さな袋。毛細血管に囲まれ、酸素を取り込み二酸化炭素を出すガス交換を行う。"],
+  ["刺激を受け取り、脳や脊髄に信号を伝える神経は？","感覚神経",["運動神経","自律神経","交感神経"],"感覚神経は感覚器官（目・耳・皮膚など）からの刺激を中枢（脳・脊髄）に伝える。"],
+  ["脳や脊髄を通らず、脊髄から直接筋肉に命令を出す反応は？","反射",["条件反射","意識的反応","本能的行動"],"反射は熱いものに触れて手を引くような無意識の素早い反応。脊髄が命令を出す。"],
+  ["ヒトの骨格で、脳を守るドーム状の骨は？","頭蓋骨",["胸骨","骨盤","肩甲骨"],"頭蓋骨は脳を守るドーム状の骨。縫合線でつながった複数の骨からなる。"],
+  ["関節で骨を動かす筋肉は、縮むときと伸びるときのどちらで力を出す？","縮むとき",["伸びるとき","どちらも同じ","力は出さない"],"筋肉は縮む（収縮する）ときにだけ力を出す。曲げるときと伸ばすときに別の筋肉がそれぞれ収縮する。"],
+];
+const SHOKUBUTSU_BANK = [
+  ["植物が光を使って栄養分（デンプン）をつくる働きは？","光合成",["呼吸","蒸散","吸水"],"光合成：葉緑体で光エネルギーを使い、水と二酸化炭素からデンプンと酸素をつくる。"],
+  ["光合成が行われる、葉の細胞にある緑色の粒は？","葉緑体",["ミトコンドリア","細胞壁","液胞"],"葉緑体には光合成色素（クロロフィル）が含まれ、光エネルギーを使って有機物をつくる。"],
+  ["植物が水を水蒸気として葉から出す働きは？","蒸散",["光合成","呼吸","吸収"],"蒸散は葉の気孔から水蒸気を出す働き。根からの水の吸い上げを助け、体温調節にも役立つ。"],
+  ["葉の裏側にある、蒸散や気体の出入り口となる小さな穴は？","気孔",["葉脈","師管","表皮"],"気孔は2つの孔辺細胞に囲まれた隙間で、二酸化炭素・酸素・水蒸気が出入りする。"],
+  ["根から吸収した水分や無機物を葉に運ぶ管は？","道管",["師管","維管束","形成層"],"道管は根・茎・葉をつなぐ管で、水と無機物を運ぶ。木部に存在する。"],
+  ["葉でつくられた栄養分（有機物）を全身に運ぶ管は？","師管",["道管","維管束","仮道管"],"師管は光合成でつくられた有機物（砂糖など）を葉から根や茎に運ぶ。靭皮部に存在する。"],
+  ["花粉が柱頭につくことを何という？","受粉",["受精","結実","発芽"],"受粉は花粉が柱頭につくこと。その後、花粉管が伸びて精細胞が卵細胞と受精する。"],
+  ["被子植物で、胚珠が入っている部分（受粉後に果実になる）は？","子房",["柱頭","花柱","がく"],"子房は受粉後に果実になる。子房の中の胚珠が種子になる。"],
+  ["アブラナやサクラのように、子房に胚珠が包まれている植物を何という？","被子植物",["裸子植物","シダ植物","コケ植物"],"被子植物は子房が胚珠を包んでいる。マツなどの裸子植物は胚珠がむき出し。"],
+  ["根・茎・葉の区別がなく、水や湿ったところに生育する植物は？","コケ植物",["シダ植物","藻類","裸子植物"],"コケ植物は根・茎・葉の区別がない。維管束もなく、体全体で水を吸収する。"],
+  ["葉緑体をもつが葉・茎・根の区別があり、胞子で増えるのは？","シダ植物",["コケ植物","被子植物","裸子植物"],"シダ植物（ワラビ・ゼンマイなど）は維管束があり、葉・茎・根の区別がある。胞子で増える。"],
+  ["植物の茎や根に見られる、水や栄養分を運ぶ管のまとまりは？","維管束",["細胞壁","形成層","柔組織"],"維管束は道管と師管がまとまったもの。双子葉類では茎の断面に輪状に並ぶ。"],
+  ["双子葉植物と単子葉植物を見分けるポイントの一つ・葉脈のちがいは？","双子葉は網状脈・単子葉は平行脈",["双子葉は平行脈・単子葉は網状脈","どちらも同じ","種類によって異なる"],"双子葉類（アサガオ・サクラなど）は網状脈、単子葉類（イネ・トウモロコシなど）は平行脈。"],
+  ["光合成の原料として使われる2つの物質は？","水と二酸化炭素",["酸素と水","窒素と水素","水と酸素"],"光合成：水＋二酸化炭素→（光エネルギー）→デンプン＋酸素。葉緑体で行われる。"],
+  ["植物が昼も夜も行っている、エネルギーを取り出す働きは？","呼吸",["光合成","蒸散","発酵"],"呼吸は有機物（デンプンなど）を分解してエネルギーを取り出す働き。昼夜を問わず常に行っている。"],
+];
+const DENKI_BANK = [
+  ["電流の流れを妨げる性質を何という？","抵抗（電気抵抗）",["電圧","電力","電流"],"抵抗の単位はΩ（オーム）。抵抗が大きいほど電流が流れにくい。"],
+  ["電圧・電流・抵抗の関係を表すオームの法則は？","電圧＝電流×抵抗",["電流＝電圧×抵抗","抵抗＝電流×電圧","電圧＝抵抗÷電流"],"V＝I×R（V:電圧[V]、I:電流[A]、R:抵抗[Ω]）。これをオームの法則という。"],
+  ["直列回路では電流はどのようになる？","どこでも同じ（一定）",["分かれて流れる","電圧に比例する","抵抗に比例する"],"直列回路では電流はどこでも等しい。電圧は各抵抗に分かれて加わる（電圧の和が全体の電圧）。"],
+  ["並列回路では電圧はどのようになる？","どこでも同じ（一定）",["分かれてかかる","電流に比例する","抵抗に反比例する"],"並列回路では電圧はどの部分も等しい。電流は各枝分かれした部分の和が全体の電流になる。"],
+  ["電流の単位は？","A（アンペア）",["V（ボルト）","Ω（オーム）","W（ワット）"],"電流の単位はA（アンペア）。電圧の単位はV（ボルト）、抵抗の単位はΩ（オーム）。"],
+  ["電気エネルギーが1秒あたりに消費される量を何という？","電力",["電流","電圧","電力量"],"電力の単位はW（ワット）。電力＝電圧×電流（W＝V×A）。"],
+  ["磁石のN極とS極の間に働く力は？","引き合う",["反発する","変わらない","方向による"],"異極（N極とS極）は引き合い、同極（N極とN極、S極とS極）は反発する。"],
+  ["コイルに電流を流すと磁石になる装置を何という？","電磁石",["発電機","モーター","変圧器"],"電磁石は電流が流れているときだけ磁力が生じる。電流を大きくしたりコイルの巻き数を増やすと磁力が強くなる。"],
+  ["コイルの中で磁石を動かすと電流が流れる現象を何という？","電磁誘導",["電気分解","静電誘導","電磁波"],"電磁誘導：磁界の変化でコイルに電流が流れる現象。発電機の原理。"],
+  ["電磁誘導で生じる電流を何という？","誘導電流",["直流","交流","静電流"],"電磁誘導で生じる電流を誘導電流という。磁石の動かし方を逆にすると電流の向きも逆になる。"],
+  ["家庭に届く電気のように、向きが周期的に変わる電流を何という？","交流（AC）",["直流（DC）","誘導電流","静電気"],"交流は電流の向きが周期的に変わる。家庭のコンセントは交流100V。電池は直流。"],
+  ["電流と磁界の両方に垂直な方向に力が働く。この力を利用した装置は？","モーター（電動機）",["発電機","変圧器","電磁石"],"モーターはフレミングの左手の法則を利用。電流と磁界の向きから力の向きが決まる。"],
+  ["抵抗を直列につないだとき、全体の抵抗はどうなる？","それぞれの抵抗の和になる",["それぞれの抵抗の積になる","最も小さい抵抗と同じになる","変わらない"],"直列接続：全体の抵抗＝R1＋R2＋…（各抵抗の和）。"],
+  ["抵抗を並列につないだとき、全体の抵抗はどうなる？","それぞれより小さくなる",["それぞれの和になる","最も大きい抵抗と同じになる","変わらない"],"並列接続：全体の抵抗は各抵抗より小さくなる（1/R全体＝1/R1＋1/R2）。"],
+  ["豆電球と乾電池の回路で、豆電球を明るくする方法として正しいのは？","電池を増やして直列につなぐ",["電池を並列につなぐ","豆電球を並列につなぐ","スイッチを外す"],"直列につなぐと電圧が上がり電流が増えて明るくなる。並列では電圧が変わらず明るさも同じ。"],
+];
+</script>
+<script type="text/babel">
+const { useState, useEffect } = React;
+const STORAGE_KEY = "rika_best";
+const QUIZ_KEY = "rv_rika";
+const Q_OPTIONS = [5, 10, 15, 20];
+const BTN = "linear-gradient(135deg,#059669,#064e3b)";
+const BANKS={
+  mix:       {bank:[...JINTAI_BANK,...SHOKUBUTSU_BANK,...DENKI_BANK],color:"#059669",title:"理科"},
+  jintai:    {bank:JINTAI_BANK,    color:"#dc2626",title:"人体"},
+  shokubutsu:{bank:SHOKUBUTSU_BANK,color:"#16a34a",title:"植物"},
+  denki:     {bank:DENKI_BANK,     color:"#2563eb",title:"電気"},
+};
+function pickProblems(diff, total) {
+  let pool = [];
+  const targets = diff === "mix" ? Object.values(BANKS) : [BANKS[diff]];
+  targets.forEach(({ bank, color, title }) => {
+    bank.forEach(([q, ans, wrongs, exp]) => {
+      const opts = shuffle([ans, ...wrongs.slice(0,3)]);
+      pool.push({ color, title, question:q, options:opts, answer:opts.indexOf(ans),
+        explanation:`【正解】${ans}
+${exp}` });
+    });
+  });
+  const shuffled = shuffle(pool);
+  const result=[]; const used=new Set();
+  while(result.length<total){
+    const idx=Math.floor(Math.random()*shuffled.length);
+    if(!used.has(idx)||shuffled.length<total){used.add(idx);result.push({...shuffled[idx]});}
+  }
+  return result;
+}
+function SelectAnswer({problem,checked,userAnswer,onAnswer}){
+  return(<div className="select-grid">{problem.options.map((opt,i)=>{
+    let cls="select-btn";
+    if(checked){if(i===problem.answer)cls+=" show-correct";else if(i===userAnswer)cls+=" wrong";}
+    return(<button key={i} className={cls} onClick={()=>!checked&&onAnswer(i)}>
+      <span style={{color:"#6b7280",marginRight:"8px",fontWeight:"normal"}}>{"①②③④"[i]}</span>{opt}
+    </button>);
+  })}</div>);
+}
+function App(){
+  const [mode,setMode]=useState("setup");
+  const [reviewBank,setReviewBank]=useState([]);
+  const [diff,setDiff]=useState("mix");
+  const [totalQ,setTotalQ]=useState(10);
+  const [problems,setProblems]=useState([]);
+  const [current,setCurrent]=useState(0);
+  const [score,setScore]=useState(0);
+  const [streak,setStreak]=useState(0);
+  const [best,setBest]=useState(0);
+  const [checked,setChecked]=useState(false);
+  const [userAnswer,setUserAnswer]=useState(null);
+  const [celeb,setCeleb]=useState(false);
+  const [isCorrect,setIsCorrect]=useState(false);
+  useEffect(()=>{
+    try{const s=localStorage.getItem("rika_best");if(s)setBest(parseInt(s)||0);}catch(_){}
+    setReviewBank(JSON.parse(localStorage.getItem("rv_rika")||'[]'));
+  },[]);
+  const saveBest=v=>{try{localStorage.setItem("rika_best",String(v));}catch(_){}};
+  const startReview=()=>{
+    const bank=JSON.parse(localStorage.getItem("rv_rika")||'[]');
+    setReviewBank(bank);
+    if(bank.length===0){setMode("setup");return;}
+    const r=bank.map(p=>{const c=p.options[p.answer];const opts=shuffle([...p.options]);return{...p,options:opts,answer:opts.indexOf(c)};});
+    setProblems(r);setCurrent(0);setScore(0);setStreak(0);setChecked(false);setUserAnswer(null);setCeleb(false);setMode("review");
+  };
+  const startQuiz=()=>{
+    setProblems(pickProblems(diff,totalQ));setCurrent(0);setScore(0);setStreak(0);
+    setChecked(false);setUserAnswer(null);setCeleb(false);setMode("quiz");
+  };
+  const problem=problems[current]||null;
+  const handleAnswer=ans=>{
+    if(checked)return;
+    setUserAnswer(ans);setChecked(true);
+    const ok=ans===problem.answer;setIsCorrect(ok);
+    if(ok){
+      setScore(s=>s+1);const ns=streak+1;setStreak(ns);
+      if(ns>best){setBest(ns);saveBest(ns);}
+      setCeleb(true);setTimeout(()=>setCeleb(false),1800);
+      try{const b=JSON.parse(localStorage.getItem("rv_rika")||'[]');const id=problem.title+'|'+problem.question;const i=b.findIndex(x=>x._id===id);if(i>=0){b[i].ok=(b[i].ok||0)+1;if(b[i].ok>=5)b.splice(i,1);localStorage.setItem("rv_rika",JSON.stringify(b));}setReviewBank([...b]);}catch(_){}
+    }else{
+      setStreak(0);
+      try{const b=JSON.parse(localStorage.getItem("rv_rika")||'[]');const id=problem.title+'|'+problem.question;if(!b.find(x=>x._id===id)){const s={...problem,_id:id,ok:0};b.push(s);localStorage.setItem("rv_rika",JSON.stringify(b));}setReviewBank([...b]);}catch(_){}
+    }
+  };
+  const nextQuestion=()=>{
+    const _end=current+1>=problems.length;
+    if(_end&&mode==="review"){const b=JSON.parse(localStorage.getItem("rv_rika")||'[]');setReviewBank([...b]);if(b.length>0){startReview();}else{setMode("graduated");}return;}
+    if(_end){setMode("result");return;}
+    setCurrent(c=>c+1);setChecked(false);setUserAnswer(null);setCeleb(false);
+  };
+  const progress=problem?(current/problems.length)*100:0;
+  const DIFF_OPTIONS=[{key:"mix",emoji:"⭐",name:"ミックス（全分野）",desc:"人体・植物・電気からランダム出題"},{key:"jintai",emoji:"🫀",name:"人体",desc:"消化・循環・神経・骨・筋肉"},{key:"shokubutsu",emoji:"🌿",name:"植物",desc:"光合成・蒸散・花・維管束・分類"},{key:"denki",emoji:"⚡",name:"電気",desc:"オームの法則・回路・電磁誘導"}];
+  if(mode==="graduated")return(<div className="setup-wrap" style={{background:"#f0fdf4"}}><div className="setup-card"><div className="setup-emoji">🎓</div><h2 className="setup-title" style={{color:"#064e3b"}}> 復習バンク卒業！</h2><div style={{background:"#d1fae5",borderRadius:"14px",padding:"16px",marginBottom:"16px",fontSize:"13px",color:"#064e3b",lineHeight:"1.8"}}>🌟 マスター達成！</div><button className="start-btn" style={{background:BTN,color:"#fff",boxShadow:"0 4px 0 #064e3b"}} onClick={()=>setMode("setup")}>もどる</button></div></div>);
+  if(mode==="setup")return(
+    <div className="setup-wrap" style={{background:"#f0fdf4"}}>
+      <div className="setup-card">
+        <div style={{textAlign:"center",marginBottom:"12px",fontSize:"12px"}}>
+          <a href="https://shoi141.github.io/rika-quiz/" style={{color:"#adb5bd",textDecoration:"none"}}>← 理科トップ</a>
+          {"　|　"}
+          <a href="https://shoi141.github.io/quiz-portal/" style={{color:"#adb5bd",textDecoration:"none"}}>🏠 教科トップ</a>
+        </div>
+        <div className="setup-emoji">🔬</div>
+        <h1 className="setup-title" style={{color:"#064e3b"}}>理科クイズ</h1>
+        <p className="setup-sub">人体・植物・電気を覚えよう！</p>
+        <div style={{marginBottom:"16px"}}>
+          <button onClick={()=>{if(reviewBank.length>0)startReview();}} style={{width:"100%",padding:"14px 16px",borderRadius:"14px",cursor:reviewBank.length>0?"pointer":"default",border:reviewBank.length>0?"2px solid #ef4444":"2px solid #e5e7eb",background:reviewBank.length>0?"#fef2f2":"#f9fafb",display:"flex",alignItems:"center",justifyContent:"space-between",fontFamily:"inherit",opacity:reviewBank.length===0?0.45:1}}>
+            <div style={{textAlign:"left"}}><div style={{fontWeight:"900",fontSize:"15px",color:reviewBank.length>0?"#b91c1c":"#374151"}}>📚 復習モード</div>{reviewBank.length>0&&<div style={{fontSize:"11px",color:"#ef4444",marginTop:"2px"}}>タップして今すぐ開始！</div>}</div>
+            <span style={{background:reviewBank.length>0?"#ef4444":"#d1d5db",color:"#fff",borderRadius:"99px",padding:"4px 12px",fontSize:"13px",fontWeight:"bold"}}>{reviewBank.length>0?reviewBank.length+"問":"なし"}</span>
+          </button>
+          {reviewBank.length===0&&<div style={{fontSize:"11px",color:"#9ca3af",textAlign:"center",marginTop:"4px"}}>間違えた問題が溜まるとここで復習できます</div>}
+        </div>
+        {best>0&&<div className="best-badge" style={{background:"#d1fae5",border:"1.5px solid #059669",color:"#064e3b"}}>🏆 最高連続記録：<strong>{best}問</strong></div>}
+        <div className="qcount-section">分野を選ぶ</div>
+        <div className="diff-btn-row">
+          {DIFF_OPTIONS.map(d=>(
+            <button key={d.key} className="diff-card-btn" style={{background:diff===d.key?"#d1fae5":"#f9fafb",border:diff===d.key?"2px solid #059669":"2px solid #e5e7eb",boxShadow:diff===d.key?"0 3px 0 #059669":"none"}} onClick={()=>setDiff(d.key)}>
+              <span style={{fontSize:"22px"}}>{d.emoji}</span>
+              <div><div className="diff-name" style={{color:diff===d.key?"#064e3b":"#1f2937"}}>{d.name}</div><div className="diff-desc">{d.desc}</div></div>
+              {diff===d.key&&<span style={{marginLeft:"auto",fontSize:"18px"}}>✅</span>}
+            </button>
+          ))}
+        </div>
+        <div className="qcount-section">何問やる？</div>
+        <div className="qcount-grid">
+          {Q_OPTIONS.map(n=>(<button key={n} className="qcount-btn" style={{border:totalQ===n?"2px solid #059669":"2px solid #dee2e6",background:totalQ===n?"#059669":"#f8f9fa",color:totalQ===n?"#fff":"#495057",boxShadow:totalQ===n?"0 3px 0 #064e3b":"none"}} onClick={()=>setTotalQ(n)}>{n}問</button>))}
+        </div>
+        <button className="start-btn" style={{background:BTN,color:"#fff",boxShadow:"0 4px 0 #064e3b"}} onClick={startQuiz}>スタート！ 🚀</button>
+      </div>
+    </div>
+  );
+  if(mode==="result"){
+    const pct=Math.round((score/problems.length)*100);
+    return(<div className="setup-wrap" style={{background:"#f0fdf4"}}><div className="setup-card">
+      <div className="setup-emoji">{pct===100?"🏆":pct>=70?"🎉":"💪"}</div>
+      <h2 className="setup-title" style={{color:"#064e3b"}}> おわり！</h2>
+      <p className="result-score">{problems.length}問中 <span className="result-big" style={{color:"#059669"}}>{score}</span> 問正解</p>
+      <div className="pct-bar-bg" style={{background:"#d1fae5"}}><div className="pct-bar-fill" style={{background:BTN,width:`${pct}%`}}/></div>
+      <p className="pct-text">{pct}%</p>
+      <div className="streak-result-row">
+        <div className="streak-result-box"><div className="streak-result-label">この回の最高連続</div><div className="streak-result-val" style={{color:"#ef4444"}}>🔥 {streak}問</div></div>
+        <div className="streak-result-box"><div className="streak-result-label">歴代最高連続</div><div className="streak-result-val" style={{color:"#f59f00"}}>🏆 {best}問</div></div>
+      </div>
+      <div style={{display:"flex",gap:"8px",marginTop:"16px"}}>
+        <button className="start-btn" style={{background:BTN,color:"#fff",boxShadow:"0 4px 0 #064e3b"}} onClick={startQuiz}>もう一度</button>
+        <button className="start-btn" style={{background:"#868e96",color:"#fff",boxShadow:"0 4px 0 #495057"}} onClick={()=>setMode("setup")}>設定へ</button>
+      </div>
+      {reviewBank.length>0&&<button className="start-btn" style={{background:"linear-gradient(135deg,#ef4444,#dc2626)",color:"#fff",boxShadow:"0 4px 0 #991b1b",marginTop:"8px",width:"100%"}} onClick={startReview}>続けて復習する 📚 ({reviewBank.length}問)</button>}
+    </div></div>);
+  }
+  if(!problem)return null;
+  return(
+    <div className="rika-root">
+      {celeb&&(<div className="celeb-overlay"><div className="celeb-box">
+        <div className="celeb-emoji">🎉</div>
+        <div className="celeb-text" style={{color:"#064e3b"}} >せいかい！</div>
+        <div className="celeb-stars">{randomStars(5)}</div>
+        {streak>=3&&<div className="celeb-streak" style={{background:"#059669"}} >🔥 {streak}れんぞく！</div>}
+        {streak===best&&streak>1&&<div className="celeb-streak" style={{background:"#f59f00",marginTop:"6px"}}>🏆 新記録！</div>}
+      </div></div>)}
+      <div className="quiz-header">
+        <button className="back-btn" onClick={()=>setMode("setup")}>← もどる</button>
+        <span className="q-label">Q{current+1}<span className="q-total">/{problems.length}</span></span>
+        <span className="streak-badge">🔥{streak}</span>
+      </div>
+      <div className="progress-bar-bg"><div className="progress-fill" style={{background:problem.color,width:`${progress}%`}}/></div>
+      <div className="problem-card" style={{borderTop:`5px solid ${problem.color}`}}>
+        <div style={{fontWeight:"900",fontSize:"12px",color:problem.color,marginBottom:"8px"}}>{problem.title}</div>
+        <div style={{fontSize:"16px",fontWeight:"bold",lineHeight:"1.8",marginBottom:"14px"}}>{problem.question}</div>
+        <SelectAnswer problem={problem} checked={checked} userAnswer={userAnswer} onAnswer={handleAnswer}/>
+      </div>
+      {checked&&(<>
+        <div style={{textAlign:"center",fontSize:"18px",fontWeight:"900",color:isCorrect?"#10b981":"#ef4444"}}>{isCorrect?"⭕ 正解！":"❌ 不正解"}</div>
+        <div className="explanation-card">
+          <div style={{fontWeight:"900",marginBottom:"4px",fontSize:"12px",color:"#92400e"}}>💡 解説</div>
+          {problem.explanation.split("\n").map((line,i)=><div key={i}>{line}</div>)}
+        </div>
+        <button className="next-btn" style={{background:BTN,color:"#fff",boxShadow:"0 4px 0 #064e3b"}} onClick={nextQuestion}>{current+1>=problems.length?"結果を見る 🎉":"つぎへ →"}</button>
+      </>)}
+    </div>
+  );
+}
+ReactDOM.createRoot(document.getElementById("root")).render(<App/>);
+</script>
+</body>
+</html>
