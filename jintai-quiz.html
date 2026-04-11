@@ -1,0 +1,229 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+<title>人体クイズ</title>
+<link rel="stylesheet" href="common.css">
+<script src="https://cdnjs.cloudflare.com/ajax/libs/react/18.2.0/umd/react.production.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/react-dom/18.2.0/umd/react-dom.production.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/babel-standalone/7.23.2/babel.min.js"></script>
+<style>
+body{background:#fff5f5;}
+.rika-root{min-height:100vh;background:#fff5f5;padding:12px;max-width:480px;margin:0 auto;display:flex;flex-direction:column;gap:10px;}
+.select-grid{display:flex;flex-direction:column;gap:8px;}
+.select-btn{width:100%;padding:13px 16px;border:2px solid #e5e7eb;border-radius:14px;background:#fff;cursor:pointer;font-size:14px;font-weight:bold;text-align:left;font-family:inherit;}
+.select-btn.show-correct{background:#d1fae5;border-color:#10b981;color:#065f46;}
+.select-btn.wrong{background:#fee2e2;border-color:#ef4444;color:#991b1b;opacity:0.7;}
+.explanation-card{background:#fef3c7;border:1.5px solid #f59e0b;border-radius:12px;padding:12px 14px;font-size:13px;color:#78350f;line-height:1.9;}
+</style>
+</head>
+<body>
+<div id="root"></div>
+<script>
+function randInt(min,max){return Math.floor(Math.random()*(max-min+1))+min;}
+function randomStars(n){return Array.from({length:n},()=>["⭐","🌟","✨"][randInt(0,2)]).join(" ");}
+function shuffle(arr){const a=[...arr];for(let i=a.length-1;i>0;i--){const j=Math.floor(Math.random()*(i+1));[a[i],a[j]]=[a[j],a[i]];}return a;}
+const JINTAI_BANK = [
+  ["食べ物を消化してエネルギーに変える器官を何という？","消化器官",["循環器官","呼吸器官","神経系"],"口・食道・胃・小腸・大腸・肛門を合わせて消化器官という。"],
+  ["胃液に含まれ、タンパク質を分解する消化酵素は？","ペプシン",["アミラーゼ","リパーゼ","マルターゼ"],"胃液にはペプシンが含まれ、タンパク質を分解する。胃酸（塩酸）も含む。"],
+  ["だ液に含まれ、デンプンを分解する消化酵素は？","アミラーゼ",["ペプシン","リパーゼ","トリプシン"],"だ液中のアミラーゼがデンプンを麦芽糖（マルトース）に分解する。"],
+  ["すい臓から分泌され、3大栄養素すべてを分解できる消化液は？","すい液",["胆汁","胃液","腸液"],"すい液にはアミラーゼ・トリプシン・リパーゼが含まれ、デンプン・タンパク質・脂肪をすべて分解できる。"],
+  ["脂肪の消化を助けるが、消化酵素を含まない消化液は？","胆汁",["すい液","胃液","腸液"],"胆汁は肝臓で作られ、胆のうに蓄えられる。消化酵素は含まないが、脂肪を乳化して消化しやすくする。"],
+  ["栄養分を最も多く吸収する器官は？","小腸",["大腸","胃","十二指腸"],"小腸の内側には柔毛があり、表面積を広げて栄養分を効率よく吸収する。"],
+  ["小腸の内側にある、栄養分を吸収する突起の名前は？","柔毛",["絨毛","繊毛","乳頭"],"柔毛（じゅうもう）は小腸の内壁にある細かい突起で、表面積を大きくして吸収効率を高める。"],
+  ["血液を全身に送り出すポンプの役割をする器官は？","心臓",["肺","肝臓","腎臓"],"心臓は筋肉でできた器官で、収縮・弛緩をくり返して血液を全身に循環させる。"],
+  ["肺から心臓に戻る血液（酸素を多く含む）が流れる血管は？","肺静脈",["肺動脈","大動脈","大静脈"],"肺静脈は肺から左心房に戻る血管。酸素を多く含む動脈血が流れる（静脈だが動脈血）。"],
+  ["酸素を運ぶ赤血球に含まれる赤い物質は？","ヘモグロビン",["コラーゲン","フィブリン","グリコーゲン"],"ヘモグロビンは鉄を含む赤いタンパク質で、酸素と結びついて全身に酸素を運ぶ。"],
+  ["血液の成分のうち、出血したときに血を固める働きをするのは？","血小板",["赤血球","白血球","血しょう"],"血小板は血液を固める（止血する）働きをする。白血球は細菌をやっつける免疫の役割。"],
+  ["不要な老廃物（尿素など）をこしとって尿をつくる器官は？","腎臓",["肝臓","膀胱","すい臓"],"腎臓は血液中の老廃物（尿素・余分な塩分・水分）をこしとって尿をつくる。"],
+  ["アンモニアを害の少ない尿素に変える器官は？","肝臓",["腎臓","すい臓","脾臓"],"肝臓はアンモニアを尿素に変える解毒作用のほか、胆汁の生成・グリコーゲンの貯蔵なども行う。"],
+  ["ヒトの呼吸で、酸素と二酸化炭素のガス交換が行われる場所は？","肺胞",["気管","気管支","胸腔"],"肺胞は肺の中の小さな袋。毛細血管に囲まれ、酸素を取り込み二酸化炭素を出すガス交換を行う。"],
+  ["刺激を受け取り、脳や脊髄に信号を伝える神経は？","感覚神経",["運動神経","自律神経","交感神経"],"感覚神経は感覚器官（目・耳・皮膚など）からの刺激を中枢（脳・脊髄）に伝える。"],
+  ["脳や脊髄を通らず、脊髄から直接筋肉に命令を出す反応は？","反射",["条件反射","意識的反応","本能的行動"],"反射は熱いものに触れて手を引くような無意識の素早い反応。脊髄が命令を出す。"],
+  ["ヒトの骨格で、脳を守るドーム状の骨は？","頭蓋骨",["胸骨","骨盤","肩甲骨"],"頭蓋骨は脳を守るドーム状の骨。縫合線でつながった複数の骨からなる。"],
+  ["関節で骨を動かす筋肉は、縮むときと伸びるときのどちらで力を出す？","縮むとき",["伸びるとき","どちらも同じ","力は出さない"],"筋肉は縮む（収縮する）ときにだけ力を出す。曲げるときと伸ばすときに別の筋肉がそれぞれ収縮する。"],
+];
+</script>
+<script type="text/babel">
+const { useState, useEffect } = React;
+const STORAGE_KEY = "jintai_best";
+const QUIZ_KEY = "rv_jintai";
+const Q_OPTIONS = [5, 10, 15, 20];
+const BTN = "linear-gradient(135deg,#dc2626,#991b1b)";
+const BANK = JINTAI_BANK;
+
+function pickProblems(total) {
+  const shuffled = shuffle(BANK);
+  const result=[]; const used=new Set();
+  while(result.length<total){
+    const idx=Math.floor(Math.random()*shuffled.length);
+    if(!used.has(idx)||shuffled.length<total){used.add(idx);result.push({...shuffled[idx]});}
+  }
+  return result;
+}
+function buildProblem([q,ans,wrongs,exp]){
+  const opts=shuffle([ans,...wrongs.slice(0,3)]);
+  return {question:q,options:opts,answer:opts.indexOf(ans),explanation:`【正解】${ans}
+${exp}`};
+}
+
+function SelectAnswer({problem,checked,userAnswer,onAnswer}){
+  return(<div className="select-grid">{problem.options.map((opt,i)=>{
+    let cls="select-btn";
+    if(checked){if(i===problem.answer)cls+=" show-correct";else if(i===userAnswer)cls+=" wrong";}
+    return(<button key={i} className={cls} onClick={()=>!checked&&onAnswer(i)}>
+      <span style={{color:"#6b7280",marginRight:"8px",fontWeight:"normal"}}>{"①②③④"[i]}</span>{opt}
+    </button>);
+  })}</div>);
+}
+
+function App(){
+  const [mode,setMode]=useState("setup");
+  const [reviewBank,setReviewBank]=useState([]);
+  const [totalQ,setTotalQ]=useState(10);
+  const [problems,setProblems]=useState([]);
+  const [current,setCurrent]=useState(0);
+  const [score,setScore]=useState(0);
+  const [streak,setStreak]=useState(0);
+  const [best,setBest]=useState(0);
+  const [checked,setChecked]=useState(false);
+  const [userAnswer,setUserAnswer]=useState(null);
+  const [celeb,setCeleb]=useState(false);
+  const [isCorrect,setIsCorrect]=useState(false);
+
+  useEffect(()=>{
+    try{const s=localStorage.getItem("jintai_best");if(s)setBest(parseInt(s)||0);}catch(_){}
+    setReviewBank(JSON.parse(localStorage.getItem("rv_jintai")||'[]'));
+  },[]);
+  const saveBest=v=>{try{localStorage.setItem("jintai_best",String(v));}catch(_){}};
+
+  const startReview=()=>{
+    const bank=JSON.parse(localStorage.getItem("rv_jintai")||'[]');
+    setReviewBank(bank);
+    if(bank.length===0){setMode("setup");return;}
+    const r=bank.map(p=>{const c=p.options[p.answer];const opts=shuffle([...p.options]);return{...p,options:opts,answer:opts.indexOf(c)};});
+    setProblems(r);setCurrent(0);setScore(0);setStreak(0);
+    setChecked(false);setUserAnswer(null);setCeleb(false);setMode("review");
+  };
+  const startQuiz=()=>{
+    const raw=shuffle(BANK).slice(0,totalQ);
+    setProblems(raw.map(buildProblem));
+    setCurrent(0);setScore(0);setStreak(0);
+    setChecked(false);setUserAnswer(null);setCeleb(false);setMode("quiz");
+  };
+  const problem=problems[current]||null;
+  const handleAnswer=ans=>{
+    if(checked)return;
+    setUserAnswer(ans);setChecked(true);
+    const ok=ans===problem.answer;setIsCorrect(ok);
+    if(ok){
+      setScore(s=>s+1);const ns=streak+1;setStreak(ns);
+      if(ns>best){setBest(ns);saveBest(ns);}
+      setCeleb(true);setTimeout(()=>setCeleb(false),1800);
+      try{const b=JSON.parse(localStorage.getItem("rv_jintai")||'[]');const id=problem.question;const i=b.findIndex(x=>x._id===id);if(i>=0){b[i].ok=(b[i].ok||0)+1;if(b[i].ok>=5)b.splice(i,1);localStorage.setItem("rv_jintai",JSON.stringify(b));}setReviewBank([...b]);}catch(_){}
+    }else{
+      setStreak(0);
+      try{const b=JSON.parse(localStorage.getItem("rv_jintai")||'[]');const id=problem.question;if(!b.find(x=>x._id===id)){b.push({...problem,_id:id,ok:0});localStorage.setItem("rv_jintai",JSON.stringify(b));}setReviewBank([...b]);}catch(_){}
+    }
+  };
+  const nextQuestion=()=>{
+    const _end=current+1>=problems.length;
+    if(_end&&mode==="review"){const b=JSON.parse(localStorage.getItem("rv_jintai")||'[]');setReviewBank([...b]);if(b.length>0){startReview();}else{setMode("graduated");}return;}
+    if(_end){setMode("result");return;}
+    setCurrent(c=>c+1);setChecked(false);setUserAnswer(null);setCeleb(false);
+  };
+  const progress=problem?(current/problems.length)*100:0;
+
+  if(mode==="graduated")return(
+    <div className="setup-wrap" style={{background:"#fff5f5"}}><div className="setup-card">
+      <div className="setup-emoji">🎓</div>
+      <h2 className="setup-title" style={{color:"#991b1b"}}> 復習バンク卒業！</h2>
+      <div style={{background:"#fef2f2",borderRadius:"14px",padding:"16px",marginBottom:"16px",fontSize:"13px",color:"#991b1b",lineHeight:"1.8"}}>🌟 マスター達成！</div>
+      <button className="start-btn" style={{background:BTN,color:"#fff",boxShadow:"0 4px 0 #991b1b"}} onClick={()=>setMode("setup")}>もどる</button>
+    </div></div>
+  );
+
+  if(mode==="setup")return(
+    <div className="setup-wrap" style={{background:"#fff5f5"}}>
+      <div className="setup-card">
+        <div style={{textAlign:"center",marginBottom:"12px",fontSize:"12px"}}>
+          <a href="https://shoi141.github.io/rika-quiz/" style={{color:"#adb5bd",textDecoration:"none"}}>← 理科トップ</a>
+          {"　|　"}
+          <a href="https://shoi141.github.io/quiz-portal/" style={{color:"#adb5bd",textDecoration:"none"}}>🏠 教科トップ</a>
+        </div>
+        <div className="setup-emoji">🫀</div>
+        <h1 className="setup-title" style={{color:"#991b1b"}}>人体クイズ</h1>
+        <p className="setup-sub">消化・循環・神経・骨・筋肉を覚えよう！</p>
+        <div style={{marginBottom:"16px"}}>
+          <button onClick={()=>{if(reviewBank.length>0)startReview();}} style={{width:"100%",padding:"14px 16px",borderRadius:"14px",cursor:reviewBank.length>0?"pointer":"default",border:reviewBank.length>0?"2px solid #ef4444":"2px solid #e5e7eb",background:reviewBank.length>0?"#fef2f2":"#f9fafb",display:"flex",alignItems:"center",justifyContent:"space-between",fontFamily:"inherit",opacity:reviewBank.length===0?0.45:1}}>
+            <div style={{textAlign:"left"}}><div style={{fontWeight:"900",fontSize:"15px",color:reviewBank.length>0?"#b91c1c":"#374151"}}>📚 復習モード</div>{reviewBank.length>0&&<div style={{fontSize:"11px",color:"#ef4444",marginTop:"2px"}}>タップして今すぐ開始！</div>}</div>
+            <span style={{background:reviewBank.length>0?"#ef4444":"#d1d5db",color:"#fff",borderRadius:"99px",padding:"4px 12px",fontSize:"13px",fontWeight:"bold"}}>{reviewBank.length>0?reviewBank.length+"問":"なし"}</span>
+          </button>
+          {reviewBank.length===0&&<div style={{fontSize:"11px",color:"#9ca3af",textAlign:"center",marginTop:"4px"}}>間違えた問題が溜まるとここで復習できます</div>}
+        </div>
+        {best>0&&<div className="best-badge" style={{background:"#fef2f2",border:"1.5px solid #dc2626",color:"#991b1b"}}>🏆 最高連続記録：<strong>{best}問</strong></div>}
+        <div className="qcount-section">何問やる？</div>
+        <div className="qcount-grid">
+          {Q_OPTIONS.map(n=>(<button key={n} className="qcount-btn" style={{border:totalQ===n?"2px solid #dc2626":"2px solid #dee2e6",background:totalQ===n?"#dc2626":"#f8f9fa",color:totalQ===n?"#fff":"#495057",boxShadow:totalQ===n?"0 3px 0 #991b1b":"none"}} onClick={()=>setTotalQ(n)}>{n}問</button>))}
+        </div>
+        <button className="start-btn" style={{background:BTN,color:"#fff",boxShadow:"0 4px 0 #991b1b"}} onClick={startQuiz}>スタート！ 🚀</button>
+      </div>
+    </div>
+  );
+
+  if(mode==="result"){
+    const pct=Math.round((score/problems.length)*100);
+    return(<div className="setup-wrap" style={{background:"#fff5f5"}}><div className="setup-card">
+      <div className="setup-emoji">{pct===100?"🏆":pct>=70?"🎉":"💪"}</div>
+      <h2 className="setup-title" style={{color:"#991b1b"}}> おわり！</h2>
+      <p className="result-score">{problems.length}問中 <span className="result-big" style={{color:"#dc2626"}}>{score}</span> 問正解</p>
+      <div className="pct-bar-bg" style={{background:"#fef2f2"}}><div className="pct-bar-fill" style={{background:BTN,width:`${pct}%`}}/></div>
+      <p className="pct-text">{pct}%</p>
+      <div className="streak-result-row">
+        <div className="streak-result-box"><div className="streak-result-label">この回の最高連続</div><div className="streak-result-val" style={{color:"#ef4444"}}>🔥 {streak}問</div></div>
+        <div className="streak-result-box"><div className="streak-result-label">歴代最高連続</div><div className="streak-result-val" style={{color:"#f59f00"}}>🏆 {best}問</div></div>
+      </div>
+      <div style={{display:"flex",gap:"8px",marginTop:"16px"}}>
+        <button className="start-btn" style={{background:BTN,color:"#fff",boxShadow:"0 4px 0 #991b1b"}} onClick={startQuiz}>もう一度</button>
+        <button className="start-btn" style={{background:"#868e96",color:"#fff",boxShadow:"0 4px 0 #495057"}} onClick={()=>setMode("setup")}>設定へ</button>
+      </div>
+      {reviewBank.length>0&&<button className="start-btn" style={{background:"linear-gradient(135deg,#ef4444,#dc2626)",color:"#fff",boxShadow:"0 4px 0 #991b1b",marginTop:"8px",width:"100%"}} onClick={startReview}>続けて復習する 📚 ({reviewBank.length}問)</button>}
+    </div></div>);
+  }
+
+  if(!problem)return null;
+  return(
+    <div className="rika-root">
+      {celeb&&(<div className="celeb-overlay"><div className="celeb-box">
+        <div className="celeb-emoji">🎉</div>
+        <div className="celeb-text" style={{color:"#991b1b"}} >せいかい！</div>
+        <div className="celeb-stars">{randomStars(5)}</div>
+        {streak>=3&&<div className="celeb-streak" style={{background:"#dc2626"}} >🔥 {streak}れんぞく！</div>}
+        {streak===best&&streak>1&&<div className="celeb-streak" style={{background:"#f59f00",marginTop:"6px"}}>🏆 新記録！</div>}
+      </div></div>)}
+      <div className="quiz-header">
+        <button className="back-btn" onClick={()=>setMode("setup")}>← もどる</button>
+        <span className="q-label">Q{current+1}<span className="q-total">/{problems.length}</span></span>
+        <span className="streak-badge">🔥{streak}</span>
+      </div>
+      <div className="progress-bar-bg"><div className="progress-fill" style={{background:"#dc2626",width:`${progress}%`}}/></div>
+      <div className="problem-card" style={{borderTop:`5px solid #dc2626"`}}>
+        <div style={{fontSize:"16px",fontWeight:"bold",lineHeight:"1.8",marginBottom:"14px"}}>{problem.question}</div>
+        <SelectAnswer problem={problem} checked={checked} userAnswer={userAnswer} onAnswer={handleAnswer}/>
+      </div>
+      {checked&&(<>
+        <div style={{textAlign:"center",fontSize:"18px",fontWeight:"900",color:isCorrect?"#10b981":"#ef4444"}}>{isCorrect?"⭕ 正解！":"❌ 不正解"}</div>
+        <div className="explanation-card">
+          <div style={{fontWeight:"900",marginBottom:"4px",fontSize:"12px",color:"#92400e"}}>💡 解説</div>
+          {problem.explanation.split("\n").map((line,i)=><div key={i}>{line}</div>)}
+        </div>
+        <button className="next-btn" style={{background:BTN,color:"#fff",boxShadow:"0 4px 0 #991b1b"}} onClick={nextQuestion}>{current+1>=problems.length?"結果を見る 🎉":"つぎへ →"}</button>
+      </>)}
+    </div>
+  );
+}
+ReactDOM.createRoot(document.getElementById("root")).render(<App/>);
+</script>
+</body>
+</html>

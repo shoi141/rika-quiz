@@ -1,0 +1,226 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+<title>電気クイズ</title>
+<link rel="stylesheet" href="common.css">
+<script src="https://cdnjs.cloudflare.com/ajax/libs/react/18.2.0/umd/react.production.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/react-dom/18.2.0/umd/react-dom.production.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/babel-standalone/7.23.2/babel.min.js"></script>
+<style>
+body{background:#eff6ff;}
+.rika-root{min-height:100vh;background:#eff6ff;padding:12px;max-width:480px;margin:0 auto;display:flex;flex-direction:column;gap:10px;}
+.select-grid{display:flex;flex-direction:column;gap:8px;}
+.select-btn{width:100%;padding:13px 16px;border:2px solid #e5e7eb;border-radius:14px;background:#fff;cursor:pointer;font-size:14px;font-weight:bold;text-align:left;font-family:inherit;}
+.select-btn.show-correct{background:#d1fae5;border-color:#10b981;color:#065f46;}
+.select-btn.wrong{background:#fee2e2;border-color:#ef4444;color:#991b1b;opacity:0.7;}
+.explanation-card{background:#fef3c7;border:1.5px solid #f59e0b;border-radius:12px;padding:12px 14px;font-size:13px;color:#78350f;line-height:1.9;}
+</style>
+</head>
+<body>
+<div id="root"></div>
+<script>
+function randInt(min,max){return Math.floor(Math.random()*(max-min+1))+min;}
+function randomStars(n){return Array.from({length:n},()=>["⭐","🌟","✨"][randInt(0,2)]).join(" ");}
+function shuffle(arr){const a=[...arr];for(let i=a.length-1;i>0;i--){const j=Math.floor(Math.random()*(i+1));[a[i],a[j]]=[a[j],a[i]];}return a;}
+const DENKI_BANK = [
+  ["電流の流れを妨げる性質を何という？","抵抗（電気抵抗）",["電圧","電力","電流"],"抵抗の単位はΩ（オーム）。抵抗が大きいほど電流が流れにくい。"],
+  ["電圧・電流・抵抗の関係を表すオームの法則は？","電圧＝電流×抵抗",["電流＝電圧×抵抗","抵抗＝電流×電圧","電圧＝抵抗÷電流"],"V＝I×R（V:電圧[V]、I:電流[A]、R:抵抗[Ω]）。これをオームの法則という。"],
+  ["直列回路では電流はどのようになる？","どこでも同じ（一定）",["分かれて流れる","電圧に比例する","抵抗に比例する"],"直列回路では電流はどこでも等しい。電圧は各抵抗に分かれて加わる（電圧の和が全体の電圧）。"],
+  ["並列回路では電圧はどのようになる？","どこでも同じ（一定）",["分かれてかかる","電流に比例する","抵抗に反比例する"],"並列回路では電圧はどの部分も等しい。電流は各枝分かれした部分の和が全体の電流になる。"],
+  ["電流の単位は？","A（アンペア）",["V（ボルト）","Ω（オーム）","W（ワット）"],"電流の単位はA（アンペア）。電圧の単位はV（ボルト）、抵抗の単位はΩ（オーム）。"],
+  ["電気エネルギーが1秒あたりに消費される量を何という？","電力",["電流","電圧","電力量"],"電力の単位はW（ワット）。電力＝電圧×電流（W＝V×A）。"],
+  ["磁石のN極とS極の間に働く力は？","引き合う",["反発する","変わらない","方向による"],"異極（N極とS極）は引き合い、同極（N極とN極、S極とS極）は反発する。"],
+  ["コイルに電流を流すと磁石になる装置を何という？","電磁石",["発電機","モーター","変圧器"],"電磁石は電流が流れているときだけ磁力が生じる。電流を大きくしたりコイルの巻き数を増やすと磁力が強くなる。"],
+  ["コイルの中で磁石を動かすと電流が流れる現象を何という？","電磁誘導",["電気分解","静電誘導","電磁波"],"電磁誘導：磁界の変化でコイルに電流が流れる現象。発電機の原理。"],
+  ["電磁誘導で生じる電流を何という？","誘導電流",["直流","交流","静電流"],"電磁誘導で生じる電流を誘導電流という。磁石の動かし方を逆にすると電流の向きも逆になる。"],
+  ["家庭に届く電気のように、向きが周期的に変わる電流を何という？","交流（AC）",["直流（DC）","誘導電流","静電気"],"交流は電流の向きが周期的に変わる。家庭のコンセントは交流100V。電池は直流。"],
+  ["電流と磁界の両方に垂直な方向に力が働く。この力を利用した装置は？","モーター（電動機）",["発電機","変圧器","電磁石"],"モーターはフレミングの左手の法則を利用。電流と磁界の向きから力の向きが決まる。"],
+  ["抵抗を直列につないだとき、全体の抵抗はどうなる？","それぞれの抵抗の和になる",["それぞれの抵抗の積になる","最も小さい抵抗と同じになる","変わらない"],"直列接続：全体の抵抗＝R1＋R2＋…（各抵抗の和）。"],
+  ["抵抗を並列につないだとき、全体の抵抗はどうなる？","それぞれより小さくなる",["それぞれの和になる","最も大きい抵抗と同じになる","変わらない"],"並列接続：全体の抵抗は各抵抗より小さくなる（1/R全体＝1/R1＋1/R2）。"],
+  ["豆電球と乾電池の回路で、豆電球を明るくする方法として正しいのは？","電池を増やして直列につなぐ",["電池を並列につなぐ","豆電球を並列につなぐ","スイッチを外す"],"直列につなぐと電圧が上がり電流が増えて明るくなる。並列では電圧が変わらず明るさも同じ。"],
+];
+</script>
+<script type="text/babel">
+const { useState, useEffect } = React;
+const STORAGE_KEY = "denki_best";
+const QUIZ_KEY = "rv_denki";
+const Q_OPTIONS = [5, 10, 15, 20];
+const BTN = "linear-gradient(135deg,#2563eb,#1e3a8a)";
+const BANK = DENKI_BANK;
+
+function pickProblems(total) {
+  const shuffled = shuffle(BANK);
+  const result=[]; const used=new Set();
+  while(result.length<total){
+    const idx=Math.floor(Math.random()*shuffled.length);
+    if(!used.has(idx)||shuffled.length<total){used.add(idx);result.push({...shuffled[idx]});}
+  }
+  return result;
+}
+function buildProblem([q,ans,wrongs,exp]){
+  const opts=shuffle([ans,...wrongs.slice(0,3)]);
+  return {question:q,options:opts,answer:opts.indexOf(ans),explanation:`【正解】${ans}
+${exp}`};
+}
+
+function SelectAnswer({problem,checked,userAnswer,onAnswer}){
+  return(<div className="select-grid">{problem.options.map((opt,i)=>{
+    let cls="select-btn";
+    if(checked){if(i===problem.answer)cls+=" show-correct";else if(i===userAnswer)cls+=" wrong";}
+    return(<button key={i} className={cls} onClick={()=>!checked&&onAnswer(i)}>
+      <span style={{color:"#6b7280",marginRight:"8px",fontWeight:"normal"}}>{"①②③④"[i]}</span>{opt}
+    </button>);
+  })}</div>);
+}
+
+function App(){
+  const [mode,setMode]=useState("setup");
+  const [reviewBank,setReviewBank]=useState([]);
+  const [totalQ,setTotalQ]=useState(10);
+  const [problems,setProblems]=useState([]);
+  const [current,setCurrent]=useState(0);
+  const [score,setScore]=useState(0);
+  const [streak,setStreak]=useState(0);
+  const [best,setBest]=useState(0);
+  const [checked,setChecked]=useState(false);
+  const [userAnswer,setUserAnswer]=useState(null);
+  const [celeb,setCeleb]=useState(false);
+  const [isCorrect,setIsCorrect]=useState(false);
+
+  useEffect(()=>{
+    try{const s=localStorage.getItem("denki_best");if(s)setBest(parseInt(s)||0);}catch(_){}
+    setReviewBank(JSON.parse(localStorage.getItem("rv_denki")||'[]'));
+  },[]);
+  const saveBest=v=>{try{localStorage.setItem("denki_best",String(v));}catch(_){}};
+
+  const startReview=()=>{
+    const bank=JSON.parse(localStorage.getItem("rv_denki")||'[]');
+    setReviewBank(bank);
+    if(bank.length===0){setMode("setup");return;}
+    const r=bank.map(p=>{const c=p.options[p.answer];const opts=shuffle([...p.options]);return{...p,options:opts,answer:opts.indexOf(c)};});
+    setProblems(r);setCurrent(0);setScore(0);setStreak(0);
+    setChecked(false);setUserAnswer(null);setCeleb(false);setMode("review");
+  };
+  const startQuiz=()=>{
+    const raw=shuffle(BANK).slice(0,totalQ);
+    setProblems(raw.map(buildProblem));
+    setCurrent(0);setScore(0);setStreak(0);
+    setChecked(false);setUserAnswer(null);setCeleb(false);setMode("quiz");
+  };
+  const problem=problems[current]||null;
+  const handleAnswer=ans=>{
+    if(checked)return;
+    setUserAnswer(ans);setChecked(true);
+    const ok=ans===problem.answer;setIsCorrect(ok);
+    if(ok){
+      setScore(s=>s+1);const ns=streak+1;setStreak(ns);
+      if(ns>best){setBest(ns);saveBest(ns);}
+      setCeleb(true);setTimeout(()=>setCeleb(false),1800);
+      try{const b=JSON.parse(localStorage.getItem("rv_denki")||'[]');const id=problem.question;const i=b.findIndex(x=>x._id===id);if(i>=0){b[i].ok=(b[i].ok||0)+1;if(b[i].ok>=5)b.splice(i,1);localStorage.setItem("rv_denki",JSON.stringify(b));}setReviewBank([...b]);}catch(_){}
+    }else{
+      setStreak(0);
+      try{const b=JSON.parse(localStorage.getItem("rv_denki")||'[]');const id=problem.question;if(!b.find(x=>x._id===id)){b.push({...problem,_id:id,ok:0});localStorage.setItem("rv_denki",JSON.stringify(b));}setReviewBank([...b]);}catch(_){}
+    }
+  };
+  const nextQuestion=()=>{
+    const _end=current+1>=problems.length;
+    if(_end&&mode==="review"){const b=JSON.parse(localStorage.getItem("rv_denki")||'[]');setReviewBank([...b]);if(b.length>0){startReview();}else{setMode("graduated");}return;}
+    if(_end){setMode("result");return;}
+    setCurrent(c=>c+1);setChecked(false);setUserAnswer(null);setCeleb(false);
+  };
+  const progress=problem?(current/problems.length)*100:0;
+
+  if(mode==="graduated")return(
+    <div className="setup-wrap" style={{background:"#eff6ff"}}><div className="setup-card">
+      <div className="setup-emoji">🎓</div>
+      <h2 className="setup-title" style={{color:"#1e3a8a"}}> 復習バンク卒業！</h2>
+      <div style={{background:"#dbeafe",borderRadius:"14px",padding:"16px",marginBottom:"16px",fontSize:"13px",color:"#1e3a8a",lineHeight:"1.8"}}>🌟 マスター達成！</div>
+      <button className="start-btn" style={{background:BTN,color:"#fff",boxShadow:"0 4px 0 #1e3a8a"}} onClick={()=>setMode("setup")}>もどる</button>
+    </div></div>
+  );
+
+  if(mode==="setup")return(
+    <div className="setup-wrap" style={{background:"#eff6ff"}}>
+      <div className="setup-card">
+        <div style={{textAlign:"center",marginBottom:"12px",fontSize:"12px"}}>
+          <a href="https://shoi141.github.io/rika-quiz/" style={{color:"#adb5bd",textDecoration:"none"}}>← 理科トップ</a>
+          {"　|　"}
+          <a href="https://shoi141.github.io/quiz-portal/" style={{color:"#adb5bd",textDecoration:"none"}}>🏠 教科トップ</a>
+        </div>
+        <div className="setup-emoji">⚡</div>
+        <h1 className="setup-title" style={{color:"#1e3a8a"}}>電気クイズ</h1>
+        <p className="setup-sub">オームの法則・回路・電磁誘導を覚えよう！</p>
+        <div style={{marginBottom:"16px"}}>
+          <button onClick={()=>{if(reviewBank.length>0)startReview();}} style={{width:"100%",padding:"14px 16px",borderRadius:"14px",cursor:reviewBank.length>0?"pointer":"default",border:reviewBank.length>0?"2px solid #ef4444":"2px solid #e5e7eb",background:reviewBank.length>0?"#fef2f2":"#f9fafb",display:"flex",alignItems:"center",justifyContent:"space-between",fontFamily:"inherit",opacity:reviewBank.length===0?0.45:1}}>
+            <div style={{textAlign:"left"}}><div style={{fontWeight:"900",fontSize:"15px",color:reviewBank.length>0?"#b91c1c":"#374151"}}>📚 復習モード</div>{reviewBank.length>0&&<div style={{fontSize:"11px",color:"#ef4444",marginTop:"2px"}}>タップして今すぐ開始！</div>}</div>
+            <span style={{background:reviewBank.length>0?"#ef4444":"#d1d5db",color:"#fff",borderRadius:"99px",padding:"4px 12px",fontSize:"13px",fontWeight:"bold"}}>{reviewBank.length>0?reviewBank.length+"問":"なし"}</span>
+          </button>
+          {reviewBank.length===0&&<div style={{fontSize:"11px",color:"#9ca3af",textAlign:"center",marginTop:"4px"}}>間違えた問題が溜まるとここで復習できます</div>}
+        </div>
+        {best>0&&<div className="best-badge" style={{background:"#dbeafe",border:"1.5px solid #2563eb",color:"#1e3a8a"}}>🏆 最高連続記録：<strong>{best}問</strong></div>}
+        <div className="qcount-section">何問やる？</div>
+        <div className="qcount-grid">
+          {Q_OPTIONS.map(n=>(<button key={n} className="qcount-btn" style={{border:totalQ===n?"2px solid #2563eb":"2px solid #dee2e6",background:totalQ===n?"#2563eb":"#f8f9fa",color:totalQ===n?"#fff":"#495057",boxShadow:totalQ===n?"0 3px 0 #1e3a8a":"none"}} onClick={()=>setTotalQ(n)}>{n}問</button>))}
+        </div>
+        <button className="start-btn" style={{background:BTN,color:"#fff",boxShadow:"0 4px 0 #1e3a8a"}} onClick={startQuiz}>スタート！ 🚀</button>
+      </div>
+    </div>
+  );
+
+  if(mode==="result"){
+    const pct=Math.round((score/problems.length)*100);
+    return(<div className="setup-wrap" style={{background:"#eff6ff"}}><div className="setup-card">
+      <div className="setup-emoji">{pct===100?"🏆":pct>=70?"🎉":"💪"}</div>
+      <h2 className="setup-title" style={{color:"#1e3a8a"}}> おわり！</h2>
+      <p className="result-score">{problems.length}問中 <span className="result-big" style={{color:"#2563eb"}}>{score}</span> 問正解</p>
+      <div className="pct-bar-bg" style={{background:"#dbeafe"}}><div className="pct-bar-fill" style={{background:BTN,width:`${pct}%`}}/></div>
+      <p className="pct-text">{pct}%</p>
+      <div className="streak-result-row">
+        <div className="streak-result-box"><div className="streak-result-label">この回の最高連続</div><div className="streak-result-val" style={{color:"#ef4444"}}>🔥 {streak}問</div></div>
+        <div className="streak-result-box"><div className="streak-result-label">歴代最高連続</div><div className="streak-result-val" style={{color:"#f59f00"}}>🏆 {best}問</div></div>
+      </div>
+      <div style={{display:"flex",gap:"8px",marginTop:"16px"}}>
+        <button className="start-btn" style={{background:BTN,color:"#fff",boxShadow:"0 4px 0 #1e3a8a"}} onClick={startQuiz}>もう一度</button>
+        <button className="start-btn" style={{background:"#868e96",color:"#fff",boxShadow:"0 4px 0 #495057"}} onClick={()=>setMode("setup")}>設定へ</button>
+      </div>
+      {reviewBank.length>0&&<button className="start-btn" style={{background:"linear-gradient(135deg,#ef4444,#dc2626)",color:"#fff",boxShadow:"0 4px 0 #991b1b",marginTop:"8px",width:"100%"}} onClick={startReview}>続けて復習する 📚 ({reviewBank.length}問)</button>}
+    </div></div>);
+  }
+
+  if(!problem)return null;
+  return(
+    <div className="rika-root">
+      {celeb&&(<div className="celeb-overlay"><div className="celeb-box">
+        <div className="celeb-emoji">🎉</div>
+        <div className="celeb-text" style={{color:"#1e3a8a"}} >せいかい！</div>
+        <div className="celeb-stars">{randomStars(5)}</div>
+        {streak>=3&&<div className="celeb-streak" style={{background:"#2563eb"}} >🔥 {streak}れんぞく！</div>}
+        {streak===best&&streak>1&&<div className="celeb-streak" style={{background:"#f59f00",marginTop:"6px"}}>🏆 新記録！</div>}
+      </div></div>)}
+      <div className="quiz-header">
+        <button className="back-btn" onClick={()=>setMode("setup")}>← もどる</button>
+        <span className="q-label">Q{current+1}<span className="q-total">/{problems.length}</span></span>
+        <span className="streak-badge">🔥{streak}</span>
+      </div>
+      <div className="progress-bar-bg"><div className="progress-fill" style={{background:"#2563eb",width:`${progress}%`}}/></div>
+      <div className="problem-card" style={{borderTop:`5px solid #2563eb"`}}>
+        <div style={{fontSize:"16px",fontWeight:"bold",lineHeight:"1.8",marginBottom:"14px"}}>{problem.question}</div>
+        <SelectAnswer problem={problem} checked={checked} userAnswer={userAnswer} onAnswer={handleAnswer}/>
+      </div>
+      {checked&&(<>
+        <div style={{textAlign:"center",fontSize:"18px",fontWeight:"900",color:isCorrect?"#10b981":"#ef4444"}}>{isCorrect?"⭕ 正解！":"❌ 不正解"}</div>
+        <div className="explanation-card">
+          <div style={{fontWeight:"900",marginBottom:"4px",fontSize:"12px",color:"#92400e"}}>💡 解説</div>
+          {problem.explanation.split("\n").map((line,i)=><div key={i}>{line}</div>)}
+        </div>
+        <button className="next-btn" style={{background:BTN,color:"#fff",boxShadow:"0 4px 0 #1e3a8a"}} onClick={nextQuestion}>{current+1>=problems.length?"結果を見る 🎉":"つぎへ →"}</button>
+      </>)}
+    </div>
+  );
+}
+ReactDOM.createRoot(document.getElementById("root")).render(<App/>);
+</script>
+</body>
+</html>
